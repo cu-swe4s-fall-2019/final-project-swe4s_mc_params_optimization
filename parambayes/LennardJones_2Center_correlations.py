@@ -21,7 +21,7 @@ class LennardJones_2C():
         
         self.M_w = M_w
         
-        with open("DCLJQ_fluid.yaml") as yfile:
+        with open("data/DCLJQ_fluid.yaml") as yfile:
             yfile = yaml.load(yfile)#,Loader=yaml.FullLoader)
     
         self.T_c_star_params = np.array(yfile["correlation_parameters"]["Stoll"]["T_c_star_params"])

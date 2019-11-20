@@ -7,12 +7,15 @@ Handles the primary functions
 import numpy as np
 from data_import import filter_thermo_data,import_literature_values,parse_data_ffs,calculate_uncertainties
 from scipy.stats import distributions
-from LennardJones_correlations import LennardJones
-from LennardJones_2Center_correlations import LennardJones_2C
 import math
 import os 
-import random
-
+from plotting import create_param_triangle_plot_4D,create_percent_dev_triangle_plot
+from utility import rhol_hat_models,Psat_hat_models,SurfTens_hat_models,T_c_hat_models,computePercentDeviations
+from datetime import date,datetime
+import pickle
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+from shutil import rmtree
 
 class MCMC_Simulation():
     """ Builds an object that runs an RJMC simulation based on the parameters the user gives to it
@@ -52,7 +55,7 @@ class MCMC_Simulation():
         self.tune_freq = tune_freq
 
     def get_attributes(self):
-        """Return attributes of RJMC system
+        """Return attributes of MCMC system
         """
 
         return {
@@ -60,9 +63,7 @@ class MCMC_Simulation():
             'properties': self.properties,
             'T_range': self.T_range,
             'n_points': self.n_points,
-            'steps': self.steps,
-            'swap_freq': self.swap_freq,
-            'biasing_factor': self.biasing_factor}
+            'steps': self.steps}
         
     def prepare_data(self):
         """From input parameters, pull appropriate experimental data and
@@ -122,26 +123,10 @@ class MCMC_Simulation():
             logp = -1*np.inf
         '''   
         
-        logp += prior.sigma_prior_function.logpdf(chain_values[2], *prior.sigma_prior_values)
-        logp += prior.epsilon_prior_function.logpdf(chain_values[1], *prior.epsilon_prior_values)
-        # Create priors for parameters common to all models
-        
-        
-        if chain_values[0] == 2:
-            chain_values[4] = 0
-            logp += self.biasing_factor[2]
-            # Ensure Q=0 for UA model
-
-        elif chain_values[0] == 0:
-            chain_values[4] = 0
-            logp += prior.L_prior_function.logpdf(chain_values[3], *prior.L_prior_values)
-            logp += self.biasing_factor[0]
-            # Add prior over L for AUA model
-
-        elif chain_values[0] == 1:
-            logp += prior.Q_prior_function.logpdf(chain_values[4], *prior.Q_prior_values)
-            logp += prior.L_prior_function.logpdf(chain_values[3], *prior.L_prior_values)
-            logp += self.biasing_factor[1]
+        logp += prior.sigma_prior_function.logpdf(chain_values[1], *prior.sigma_prior_values)
+        logp += prior.epsilon_prior_function.logpdf(chain_values[0], *prior.epsilon_prior_values)
+        logp += prior.Q_prior_function.logpdf(chain_values[3], *prior.Q_prior_values)
+        logp += prior.L_prior_function.logpdf(chain_values[2], *prior.L_prior_values)
             # Add priors for Q and L for AUA+Q model
 
         rhol_hat = rhol_hat_models(compound_2CLJ, self.thermo_data_rhoL[:, 0], *chain_values)  # [kg/m3]
@@ -165,38 +150,17 @@ class MCMC_Simulation():
 
         return logp
     
-    def set_initial_state(self, prior, compound_2CLJ, initial_model=None, initial_position=None):
+    def set_initial_state(self, prior, compound_2CLJ, initial_position=None):
         initial_logp = math.nan
         while math.isnan(initial_logp):
-            initial_values = np.empty(5)
-            self.n_models = 3
+            initial_values = np.empty(4)
 
             rnorm = np.random.normal
 
-            initial_values[0] = random.randint(0, self.n_models - 1)
-
-            if initial_model == 'AUA':
-                initial_values[0] = 0
-            elif initial_model == 'AUA+Q':
-                initial_values[0] = 1
-            elif initial_model == 'UA':
-                initial_values[0] = 2
-
-            if initial_values[0] == 0:
-                initial_values[1] = rnorm(self.opt_params_AUA[0], self.opt_params_AUA[0] / 20)
-                initial_values[2] = rnorm(self.opt_params_AUA[1], self.opt_params_AUA[1] / 20)
-                initial_values[3] = rnorm(self.opt_params_AUA[2], self.opt_params_AUA[2] / 20)
-                initial_values[4] = 0
-            elif initial_values[0] == 1:
-                initial_values[1] = rnorm(self.opt_params_AUA_Q[0], self.opt_params_AUA_Q[0] / 20)
-                initial_values[2] = rnorm(self.opt_params_AUA_Q[1], self.opt_params_AUA_Q[1] / 20)
-                initial_values[3] = rnorm(self.opt_params_AUA_Q[2], self.opt_params_AUA_Q[2] / 20)
-                initial_values[4] = rnorm(self.opt_params_AUA_Q[2], self.opt_params_AUA_Q[2] / 20)
-            elif initial_values[0] == 2:
-                initial_values[1] = rnorm(self.opt_params_UA[0], self.opt_params_UA[0] / 20)
-                initial_values[2] = rnorm(self.opt_params_UA[1], self.opt_params_UA[1] / 20)
-                initial_values[3] = self.NIST_bondlength
-                initial_values[4] = 0
+            initial_values[0] = rnorm(self.ff_params_ref[0][0], self.ff_params_ref[0][0] / 10)
+            initial_values[1] = rnorm(self.ff_params_ref[0][1], self.ff_params_ref[0][1] / 10)
+            initial_values[2] = rnorm(self.ff_params_ref[0][2], self.ff_params_ref[0][2] / 10)
+            initial_values[3] = rnorm(self.ff_params_ref[0][3], self.ff_params_ref[0][3] / 10)
 
             if initial_position is not None:
                 initial_values = initial_position
@@ -246,9 +210,6 @@ class MCMC_Simulation():
         self.trace = [self.initial_values]
         self.logp_trace = [self.initial_logp]
         self.percent_dev_trace = [self.initial_percent_deviation]
-        self.BAR_trace = []
-        self.move_proposals = np.zeros((self.n_models, self.n_models))
-        self.move_acceptances = np.zeros((self.n_models, self.n_models))
 
         print('Initializing Simulation...')
         print('Tuning Proposals...')
@@ -260,15 +221,14 @@ class MCMC_Simulation():
             self.current_params = self.trace[i].copy()
             self.current_model = int(self.current_params[0])
             self.current_log_prob = self.logp_trace[i].copy()
+            self.move_proposals = 0
+            self.move_acceptances = 0
 
-            new_params, new_log_prob, acceptance = self.RJMC_Steps(prior, compound_2CLJ)
+            new_params, new_log_prob, acceptance = self.MCMC_Steps(prior, compound_2CLJ)
 
             #self.move_proposals[int(self.current_params[0]), int(new_params[0])] += 1
 
-            if acceptance == 'True':
-                self.move_acceptances[int(self.current_params[0]), int(new_params[0])] += 1
-
-                # accept_vector[i]=1
+            # accept_vector[i]=1
             self.logp_trace.append(new_log_prob)
             self.trace.append(new_params)
             self.percent_dev_trace.append(computePercentDeviations(compound_2CLJ,
@@ -286,57 +246,41 @@ class MCMC_Simulation():
                                                                    T_c_hat_models))
 
             if (not (i + 1) % self.tune_freq) and (i < self.tune_for):
-                self.Tune_RJMC()
-
+                self.Tune_MCMC()
             if i == self.tune_for:
-                self.move_proposals = np.zeros((self.n_models, self.n_models))
-                self.move_acceptances = np.zeros((self.n_models, self.n_models))
-                self.BAR_trace = []
+                self.move_proposals = 0
+                self.move_acceptances = 0
+
                 #print('Tuning complete!')
                 #print('==============================')
         self.trace = np.asarray(self.trace)
         self.logp_trace = np.asarray(self.logp_trace)
         self.percent_dev_trace = np.asarray(self.percent_dev_trace)
+        self.trace_tuned = self.trace[self.tune_for + 1:]
+        self.logp_trace_tuned = self.logp_trace[self.tune_for + 1:]
+        self.percent_dev_trace_tuned = self.percent_dev_trace[self.tune_for + 1:]
         print('Simulation Done!')
         print('==============================')
         
     def MCMC_Steps(self, prior, compound_2CLJ):
         proposed_params = self.current_params.copy()
 
-        random_move = np.random.random()
 
-        if random_move <= self.swap_freq:
-            proposed_params, proposed_log_prob, proposed_model, rjmc_jacobian, rjmc_transition = self.model_proposal(
-                prior, proposed_params, compound_2CLJ)
-            alpha = (proposed_log_prob - self.current_log_prob) + np.log(rjmc_jacobian) + np.log(rjmc_transition)
-            BAR_value = [proposed_model, self.current_params[0], -((proposed_log_prob - self.current_log_prob) + np.log(rjmc_jacobian))]
-            self.BAR_trace.append([BAR_value,proposed_params])
+        proposed_params, proposed_log_prob = self.parameter_proposal(prior, proposed_params, compound_2CLJ)
+        self.move_proposals += 1
+        alpha = (proposed_log_prob - self.current_log_prob)
 
-            if proposed_log_prob == math.nan:
-                proposed_log_prob = -math.inf
-                print('nan detected')
-
-        else:
-            if self.try_rjmc_move is True:
-                proposed_params, proposed_log_prob = self.parameter_proposal(prior, proposed_params, compound_2CLJ)
-                BAR_proposed_params, BAR_proposed_log_prob,BAR_rjmc_jacobian = self.try_rjmc(prior, proposed_params, compound_2CLJ)
-                BAR_value = [BAR_proposed_params[0], self.current_params[0], -((BAR_proposed_log_prob - self.current_log_prob) + np.log(BAR_rjmc_jacobian))]
-                self.BAR_trace.append([BAR_value,proposed_params])
-                alpha = (proposed_log_prob - self.current_log_prob)
-            else:
-                proposed_params, proposed_log_prob = self.parameter_proposal(prior, proposed_params, compound_2CLJ)
-                alpha = (proposed_log_prob - self.current_log_prob)
-
+        
         acceptance = self.accept_reject(alpha)
         if acceptance == 'True':
             new_log_prob = proposed_log_prob
             new_params = proposed_params
+            self.move_acceptances += 1            
 
         elif acceptance == 'False':
             new_log_prob = self.current_log_prob
             new_params = self.current_params
-            if new_params[0] != self.current_params[0]:
-                print('move REJECTED')
+   
 
         return new_params, new_log_prob, acceptance
 
@@ -348,21 +292,15 @@ class MCMC_Simulation():
         else:
             acceptance = 'False'
         return acceptance
+
     
     def parameter_proposal(self, prior, proposed_params, compound_2CLJ):
 
         rnorm = np.random.normal
-        self.move_proposals[self.current_model,self.current_model] += 1
-        # Choose a random parameter to change
-        if self.current_model == 0:
-            modified_param = int(np.ceil(np.random.random() * (self.n_params - 2)))
-        elif self.current_model == 1:
-            modified_param = int(np.ceil(np.random.random() * (self.n_params - 1)))
-        elif self.current_model == 2:
-            modified_param = int(np.ceil(np.random.random() * (self.n_params - 3)))
+        modified_param = int(np.random.randint(0,4))
 
         proposed_params[modified_param] = rnorm(proposed_params[modified_param], self.prop_sd[modified_param])
-        proposed_log_prob = self.calc_posterior(prior, compound_2CLJ, proposed_params,)
+        proposed_log_prob = self.calc_posterior(prior, compound_2CLJ, proposed_params)
 
         return proposed_params, proposed_log_prob
 
@@ -376,150 +314,20 @@ class MCMC_Simulation():
         elif acceptance_rate > 0.5:
             self.prop_sd *= 1.1
             # print('No')
-            
-    def Report(self, plotting=False, USE_BAR=False):
-        print('Proposed Moves:')
-        print(np.sum(self.move_proposals))
-        print(self.move_proposals)
-        print('==============================')
-        print('Successful Moves:')
-        print(self.move_acceptances)
-        print('==============================')
-        prob_matrix = self.move_acceptances / self.move_proposals
-        print('Ratio of successful moves')
-        print(prob_matrix)
-        print('==============================')
-        transition_matrix = np.ones((3, 3))
-        transition_matrix[0, 1] = self.move_acceptances[0, 1] / np.sum(self.move_proposals, 1)[0]
-        transition_matrix[0, 2] = self.move_acceptances[0, 2] / np.sum(self.move_proposals, 1)[0]
-        transition_matrix[1, 0] = self.move_acceptances[1, 0] / np.sum(self.move_proposals, 1)[1]
-        transition_matrix[1, 2] = self.move_acceptances[1, 2] / np.sum(self.move_proposals, 1)[1]
-        transition_matrix[2, 1] = self.move_acceptances[2, 1] / np.sum(self.move_proposals, 1)[2]
-        transition_matrix[2, 0] = self.move_acceptances[2, 0] / np.sum(self.move_proposals, 1)[2]
-        transition_matrix[0, 0] = 1 - transition_matrix[0, 1] - transition_matrix[0, 2]
-        transition_matrix[1, 1] = 1 - transition_matrix[1, 0] - transition_matrix[1, 2]
-        transition_matrix[2, 2] = 1 - transition_matrix[2, 0] - transition_matrix[2, 1]
-        print('Transition Matrix:')
-        print(transition_matrix)
-        print('==============================')
-        self.transition_matrix = transition_matrix
-
-        self.trace_tuned = self.trace[self.tune_for + 1:]
-        self.logp_trace_tuned = self.logp_trace[self.tune_for + 1:]
-        self.percent_dev_trace_tuned = self.percent_dev_trace[self.tune_for + 1:]
-
-
-        trace_equil = self.trace_tuned
-        logp_trace_equil = self.logp_trace_tuned
-        percent_dev_trace_equil = self.percent_dev_trace_tuned
-        self.prob_conf = None
-        try:
-            self.prob_conf = compute_multinomial_confidence_intervals(trace_equil)
-        except pymbar.utils.ParameterError:
-            print('Cannot compute confidence intervals due to only sampling one model')
-            
-        # Converts the array with number of model parameters into an array with
-        # the number of times there was 1 parameter or 2 parameters
-        model_count = np.array([len(trace_equil[trace_equil[:, 0] == 0]), len(
-            trace_equil[trace_equil[:, 0] == 1]), len(trace_equil[trace_equil[:, 0] == 2])])
-
-        prob_0 = 1. * model_count[0] / (len(trace_equil))
-        print('Percent that  model 0 is sampled: ' + str(prob_0 * 100.))  # The percent that use 1 parameter model
-
-        prob_1 = 1. * model_count[1] / (len(trace_equil))
-        print('Percent that model 1 is sampled: ' + str(prob_1 * 100.))  # The percent that use two center UA LJ
-
-        prob_2 = 1. * model_count[2] / (len(trace_equil))
-        print('Percent that model 2 is sampled: ' + str(prob_2 * 100.))  # The percent that use two center UA LJ
-        print('==============================')
-        self.prob = [prob_0, prob_1, prob_2]
-
-        self.Exp_ratio = [prob_0 / prob_1, prob_0/prob_2]
-        
-        if self.prob_conf is not None:
-            print('95% confidence intervals for probability',self.prob_conf)
-        
-
-        self.unbiased_prob = unbias_simulation(np.asarray(self.biasing_factor),np.asarray(self.prob))
-        print('Unbiased probabilities')
-
-
-
-        print('Experimental sampling ratio:', self.Exp_ratio)
-        print('==============================')
-
-        print('Detailed Balance')
-
-        # These sets of numbers should be roughly equal to each other (If both
-        # models are sampled).  If not, big problem
-
-        print(prob_0 * transition_matrix[0, 1])
-        print(prob_1 * transition_matrix[1, 0])
-
-        print(prob_0 * transition_matrix[0, 2])
-        print(prob_2 * transition_matrix[2, 0])
-
-        print(prob_1 * transition_matrix[1, 2])
-        print(prob_2 * transition_matrix[2, 1])
-        print('==============================')
-        trace_model_0 = []
-        trace_model_1 = []
-        trace_model_2 = []
-        '''
-        log_trace_0=[]
-        log_trace_1=[]
-        log_trace_2=[]
-        '''
-        for i in range(np.size(trace_equil, 0)):
-            if trace_equil[i, 0] == 0:
-                trace_model_0.append(trace_equil[i])
-                # log_trace_0.append(logp_trace[i])
-            elif trace_equil[i, 0] == 1:
-                trace_model_1.append(trace_equil[i])
-                # log_trace_1.append(logp_trace[i])
-            elif trace_equil[i, 0] == 2:
-                trace_model_2.append(trace_equil[i])
-                # log_trace_2.append(logp_trace[i])
-
-        self.trace_model_0 = np.asarray(trace_model_0)
-        self.trace_model_1 = np.asarray(trace_model_1)
-        self.trace_model_2 = np.asarray(trace_model_2)
-
-        self.BAR_trace = np.asarray(self.BAR_trace)
-        if USE_BAR is True:
-            self.BF_BAR = self.compute_BAR()
-            print('BAR Bayes factor estimates')
-            print(self.BF_BAR)
-            
-            
-        else:
-            self.BF_BAR = None
-            
-        if plotting == True:
-            #DEPRECATED
-            create_param_triangle_plot_4D(self.trace_model_0, 'trace_model_0',
-                                          self.lit_params, self.properties, self.compound, self.steps)
-            create_param_triangle_plot_4D(self.trace_model_1, 'trace_model_1',
-                                          self.lit_params, self.properties, self.compound, self.steps)
-            create_param_triangle_plot_4D(self.trace_model_2, 'trace_model_2',
-                                          self.lit_params, self.properties, self.compound, self.steps)
-
-            create_percent_dev_triangle_plot(percent_dev_trace_equil, 'percent_dev_trace',
-                                             self.lit_devs, self.prob, self.properties, self.compound, self.steps)
-
-        return self.trace_tuned, self.logp_trace_tuned, self.percent_dev_trace_tuned, self.BAR_trace
-    
+                
     def write_output(self, prior_dict, tag=None, save_traj=False):
 
-        # Ask if output exists
-        if os.path.isdir('output') is False:
-            os.mkdir('output')
-        if os.path.isdir('output/' + self.compound) is False:
-            os.mkdir('output/' + self.compound)
-        if os.path.isdir('output/' + self.compound + '/' + self.properties) is False:
-            os.mkdir('output/' + self.compound + '/' + self.properties)
+	
 
-        path = 'output/' + self.compound + '/' + self.properties + '/' + self.compound + \
+        # Ask if output exists
+        if os.path.isdir('../output') is False:
+            os.mkdir('../output')
+        if os.path.isdir('../output/' + self.compound) is False:
+            os.mkdir('../output/' + self.compound)
+        if os.path.isdir('../output/' + self.compound + '/' + self.properties) is False:
+            os.mkdir('../output/' + self.compound + '/' + self.properties)
+
+        path = '../output/' + self.compound + '/' + self.properties + '/' + self.compound + \
             '_' + self.properties + '_' + str(self.steps) + '_' + tag + '_' + str(date.today())
 
         if os.path.isdir(path):
@@ -537,32 +345,10 @@ class MCMC_Simulation():
         plt.savefig(path + '/figures/logp_trace.png')
         plt.close()
 
-        plt.plot(self.trace_tuned[:, 0])
-        plt.savefig(path + '/figures/model_trace.png')
-        plt.close()
-
 
         create_param_triangle_plot_4D(
-            self.trace_model_0,
+            self.trace_tuned,
             'triangle_plot_trace_model_0',
-            self.lit_params,
-            self.properties,
-            self.compound,
-            self.steps,
-            file_loc=path +
-            '/figures/')
-        create_param_triangle_plot_4D(
-            self.trace_model_1,
-            'triangle_plot_trace_model_1',
-            self.lit_params,
-            self.properties,
-            self.compound,
-            self.steps,
-            file_loc=path +
-            '/figures/')
-        create_param_triangle_plot_4D(
-            self.trace_model_2,
-            'triangle_plot_trace_model_2',
             self.lit_params,
             self.properties,
             self.compound,
@@ -577,22 +363,12 @@ class MCMC_Simulation():
             self.compound,
             self.steps,
             file_loc=path + '/figures/')
-        plot_bar_chart(
-            self.prob,
-            self.properties,
-            self.compound,
-            self.steps,
-            self.n_models,
-            file_loc=path +
-            '/figures/')
 
         print('Writing metadata...')
         print('==============================')
         self.write_datapoints(path)
 
         self.write_metadata(path, prior_dict)
-
-        self.write_simulation_results(path)
 
         if save_traj:
             print('Saving Trajectories')
@@ -627,28 +403,6 @@ class MCMC_Simulation():
             pickle.dump(metadata,f)
 
 
-    def write_simulation_results(self, path):
-        results = {'Proposed Moves': self.move_proposals,
-                   'Tuning Frequency': self.tune_freq,
-                   'Tuning Length': self.tune_for,
-                   'Final Move SD': self.prop_sd,
-                   'Accepted Moves': self.move_acceptances,
-                   'Transition Matrix': self.transition_matrix,
-                   'Model Probabilities': self.prob,
-                   'Timestamp': str(datetime.today()),
-                   'Bayes Factors (Sampling Ratio)': self.Exp_ratio,
-                   'Model Probability confidence intervals':self.prob_conf,
-                   'Unbiased Probabilities': self.unbiased_prob}
-        if self.BF_BAR is not None:
-            results['Bayes Factors (BAR)'] = self.BF_BAR
-
-
-
-        filename = path + '/results.pkl'
-        with open(filename, 'wb') as f:
-            pickle.dump(results,f)
-               
-
 
     def write_traces(self, path):
         if os.path.isdir(path + '/trace') == False:
@@ -656,7 +410,6 @@ class MCMC_Simulation():
         np.save(path + '/trace/trace.npy', self.trace_tuned)
         np.save(path + '/trace/logp_trace.npy', self.logp_trace_tuned)
         np.save(path + '/trace/percent_dev_trace_tuned.npy', self.percent_dev_trace_tuned)
-        np.save(path + '/trace/BAR_trace.npy',self.BAR_trace)
         
 class MCMC_Prior():
     """ Sets up a prior based on the user-specified prior types and parameters
@@ -713,4 +466,7 @@ class MCMC_Prior():
         elif Q_prior_type == 'gamma':
             self.Q_prior_function = self.dgamma
             self.Q_prior_values = [Q_prior_vals[0], Q_prior_vals[1], Q_prior_vals[2]]
-            
+
+
+def main():
+    pass
