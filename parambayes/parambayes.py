@@ -5,6 +5,10 @@ Bayesian MCMC parameterization for CSCI 7000 (swe4s) class project
 Handles the primary functions
 """
 import numpy as np
+from data_import import filter_thermo_data,import_literature_values,parse_data_ffs,calculate_uncertainties
+from scipy.stats import distributions
+from LennardJones_correlations import LennardJones
+from LennardJones_2Center_correlations import LennardJones_2C
 
 class MCMC_Simulation():
     """ Builds an object that runs an RJMC simulation based on the parameters the user gives to it
@@ -99,3 +103,60 @@ class MCMC_Simulation():
             self.lit_params, self.lit_devs = import_literature_values('two', self.compound)
         elif self.properties == 'All':
             self.lit_params, self.lit_devs = import_literature_values('three',self.compound)
+            
+    def calc_posterior(self, prior, compound_2CLJ, chain_values):
+        # def calc_posterior(model,eps,sig,L,Q,biasing_factor_UA=0,biasing_factor_AUA=0,biasing_factor_AUA_Q=0):
+
+        dnorm = distributions.norm.logpdf
+
+        logp = 0
+        
+        '''
+        if chain_values[1] or chain_values[2] or chain_values[3] <= 0:
+            #disallow values below 0 as nonphysical
+            #print('Reject negative value')
+            logp = -1*np.inf
+        '''   
+        
+        logp += prior.sigma_prior_function.logpdf(chain_values[2], *prior.sigma_prior_values)
+        logp += prior.epsilon_prior_function.logpdf(chain_values[1], *prior.epsilon_prior_values)
+        # Create priors for parameters common to all models
+        
+        
+        if chain_values[0] == 2:
+            chain_values[4] = 0
+            logp += self.biasing_factor[2]
+            # Ensure Q=0 for UA model
+
+        elif chain_values[0] == 0:
+            chain_values[4] = 0
+            logp += prior.L_prior_function.logpdf(chain_values[3], *prior.L_prior_values)
+            logp += self.biasing_factor[0]
+            # Add prior over L for AUA model
+
+        elif chain_values[0] == 1:
+            logp += prior.Q_prior_function.logpdf(chain_values[4], *prior.Q_prior_values)
+            logp += prior.L_prior_function.logpdf(chain_values[3], *prior.L_prior_values)
+            logp += self.biasing_factor[1]
+            # Add priors for Q and L for AUA+Q model
+
+        rhol_hat = rhol_hat_models(compound_2CLJ, self.thermo_data_rhoL[:, 0], *chain_values)  # [kg/m3]
+        Psat_hat = Psat_hat_models(compound_2CLJ, self.thermo_data_Pv[:, 0], *chain_values)  # [kPa]
+        SurfTens_hat = SurfTens_hat_models(compound_2CLJ, self.thermo_data_SurfTens[:, 0], *chain_values)
+        # Compute properties at temperatures from experimental data
+
+        # Data likelihood: Compute likelihood based on gaussian penalty function
+        if self.properties == 'rhol':
+            logp += sum(dnorm(self.thermo_data_rhoL[:, 1], rhol_hat, self.t_rhol**-2.))
+            #logp += sum(dnorm(rhol_data,rhol_hat,t_rhol**-2.))
+        elif self.properties == 'Psat':
+            logp += sum(dnorm(self.thermo_data_Pv[:, 1], Psat_hat, self.t_Psat**-2.))
+        elif self.properties == 'rhol+Psat':
+            logp += sum(dnorm(self.thermo_data_rhoL[:, 1], rhol_hat, self.t_rhol**-2.))
+            logp += sum(dnorm(self.thermo_data_Pv[:, 1], Psat_hat, self.t_Psat**-2.))
+        elif self.properties == 'All':
+            logp += sum(dnorm(self.thermo_data_rhoL[:, 1], rhol_hat, self.t_rhol**-2.))
+            logp += sum(dnorm(self.thermo_data_Pv[:, 1], Psat_hat, self.t_Psat**-2.))
+            logp += sum(dnorm(self.thermo_data_SurfTens[:, 1], SurfTens_hat, self.t_SurfTens**-2))
+
+        return logp
