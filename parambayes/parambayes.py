@@ -348,7 +348,7 @@ class MCMC_Simulation():
 
         create_param_triangle_plot_4D(
             self.trace_tuned,
-            'triangle_plot_trace_model_0',
+            'triangle_plot_params',
             self.lit_params,
             self.properties,
             self.compound,
