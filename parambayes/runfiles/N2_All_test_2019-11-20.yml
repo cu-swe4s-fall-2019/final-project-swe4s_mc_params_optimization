@@ -1,0 +1,30 @@
+compound: N2
+label: test
+number_data_points: 10
+priors:
+  L:
+  - gamma
+  - - 53.1725
+    - 0
+    - 0.002059
+  Q:
+  - exponential
+  - - 0
+    - 1
+  epsilon:
+  - gamma
+  - - 134.665
+    - 0
+    - 0.2683
+  sigma:
+  - gamma
+  - - 2646.618
+    - 0
+    - 0.0001246
+properties: All
+save_traj: false
+steps: 100000
+swap_freq: 0.1
+trange:
+- 0.55
+- 0.95
