@@ -6,17 +6,9 @@ Created on Wed Nov 20 14:09:21 2019
 @author: owenmadin
 """
 
-from __future__ import division
-import numpy as np
 import yaml
-from LennardJones_correlations import LennardJones
 from LennardJones_2Center_correlations import LennardJones_2C
-import random as rm
 from datetime import date
-import copy
-from pymbar import BAR, timeseries
-import random
-import sys
 from parambayes import MCMC_Simulation,MCMC_Prior
 import argparse
 
