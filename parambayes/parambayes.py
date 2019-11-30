@@ -5,12 +5,12 @@ Bayesian MCMC parameterization for CSCI 7000 (swe4s) class project
 Handles the primary functions
 """
 import numpy as np
-from data_import import filter_thermo_data,import_literature_values,parse_data_ffs,calculate_uncertainties
+from parambayes.data_import import filter_thermo_data,import_literature_values,parse_data_ffs,calculate_uncertainties
 from scipy.stats import distributions
 import math
 import os 
-from plotting import create_param_triangle_plot_4D,create_percent_dev_triangle_plot
-from utility import rhol_hat_models,Psat_hat_models,SurfTens_hat_models,T_c_hat_models,computePercentDeviations
+from parambayes.plotting import create_param_triangle_plot_4D,create_percent_dev_triangle_plot
+from parambayes.utility import rhol_hat_models,Psat_hat_models,SurfTens_hat_models,T_c_hat_models,computePercentDeviations
 from datetime import date,datetime
 import pickle
 import matplotlib.pyplot as plt

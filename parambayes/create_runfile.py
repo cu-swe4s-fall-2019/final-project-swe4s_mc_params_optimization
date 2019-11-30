@@ -52,5 +52,9 @@ if os.path.exists('runfiles') is False:
 filename = 'runfiles/'+simulation_params['compound'] + '_'+simulation_params['properties']+'_'+simulation_params['label']+'_'+today+'.yml' 
 
 
-with open(filename,'w') as outfile:
-    yaml.dump(simulation_params,outfile,default_flow_style=False)
+def main():       
+    with open(filename,'w') as outfile:
+        yaml.dump(simulation_params,outfile,default_flow_style=False)
+
+if __name__ == "__main__":
+    main()

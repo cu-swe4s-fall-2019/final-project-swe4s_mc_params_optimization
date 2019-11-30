@@ -10,7 +10,10 @@ import scipy as sp
 import matplotlib.pyplot as plt
 import pandas as pd
 import yaml
-from uncertainty_models import uncertainty_models
+from parambayes.uncertainty_models import uncertainty_models
+import os
+
+abs_dir = os.path.dirname(os.path.abspath(__file__))
 
 def filter_thermo_data(thermo_data,T_min,T_max,n_points):
     for name in thermo_data:
@@ -30,7 +33,7 @@ def filter_thermo_data(thermo_data,T_min,T_max,n_points):
     return thermo_data
 
 def import_literature_values(criteria,compound):
-    df=pd.read_csv('data/Pareto_Hasse_'+criteria+'_criteria.txt',delimiter=' ',skiprows=2,usecols=[0,1,2,3,4,5,6,7,8])
+    df=pd.read_csv(abs_dir+'/data/Pareto_Hasse_'+criteria+'_criteria.txt',delimiter=' ',skiprows=2,usecols=[0,1,2,3,4,5,6,7,8])
     
     df=df[df.Substance==compound]
     df1=df.iloc[:,1:5]
@@ -62,7 +65,9 @@ def calculate_uncertainties(thermo_data,T_c):
     return u_dict
 
 def parse_data_ffs(compound):
-    fname = "data/lit_forcefields/"+compound+".yaml"
+    fname = abs_dir+"/data/lit_forcefields/"+compound+".yaml"
+    print(os.path.abspath(__file__))
+    print(os.path.abspath(''))
     with open(fname) as yfile:
         yfile = yaml.load(yfile)#,Loader=yaml.FullLoader)
     ff_params=[]
@@ -73,10 +78,10 @@ def parse_data_ffs(compound):
     ff_params_ref=np.transpose(np.asarray(ff_params))
     ff_params_ref[:,1:]=ff_params_ref[:,1:]/10
 
-    Tc_lit = np.loadtxt('data/TRC_data/'+compound+'/Tc.txt',skiprows=1)
-    M_w = np.loadtxt('data/TRC_data/'+compound+'/Mw.txt',skiprows=1)
+    Tc_lit = np.loadtxt(abs_dir+'/data/TRC_data/'+compound+'/Tc.txt',skiprows=1)
+    M_w = np.loadtxt(abs_dir+'/data/TRC_data/'+compound+'/Mw.txt',skiprows=1)
     
-    df=pd.read_csv('data/NIST_bondlengths/NIST_bondlengths.txt',delimiter='\t')
+    df=pd.read_csv(abs_dir+'/data/NIST_bondlengths/NIST_bondlengths.txt',delimiter='\t')
     df=df[df.Compound==compound]
     NIST_bondlength=np.asarray(df)
     
@@ -84,7 +89,7 @@ def parse_data_ffs(compound):
     data=['rhoL','Pv','SurfTens']
     data_dict={}
     for name in data:
-        df=pd.read_csv('data/TRC_data/'+compound+'/'+name+'.txt',sep='\t')
+        df=pd.read_csv(abs_dir+'/data/TRC_data/'+compound+'/'+name+'.txt',sep='\t')
         df=df.dropna()
         data_dict[name]=df
     return ff_params_ref, Tc_lit, M_w,data_dict, NIST_bondlength[0][1]/10
