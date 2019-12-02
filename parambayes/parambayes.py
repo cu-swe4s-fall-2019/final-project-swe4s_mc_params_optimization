@@ -150,6 +150,48 @@ class MCMC_Simulation():
 
         return logp
     
+    def calc_posterior_emcee(self,chain_values,compound_2CLJ,prior)    :
+            # def calc_posterior(model,eps,sig,L,Q,biasing_factor_UA=0,biasing_factor_AUA=0,biasing_factor_AUA_Q=0):
+
+        dnorm = distributions.norm.logpdf
+
+        logp = 0
+        
+        '''
+        if chain_values[1] or chain_values[2] or chain_values[3] <= 0:
+            #disallow values below 0 as nonphysical
+            #print('Reject negative value')
+            logp = -1*np.inf
+        '''   
+        
+        logp += prior.sigma_prior_function.logpdf(chain_values[1], *prior.sigma_prior_values)
+        logp += prior.epsilon_prior_function.logpdf(chain_values[0], *prior.epsilon_prior_values)
+        logp += prior.Q_prior_function.logpdf(chain_values[3], *prior.Q_prior_values)
+        logp += prior.L_prior_function.logpdf(chain_values[2], *prior.L_prior_values)
+            # Add priors for Q and L for AUA+Q model
+
+        rhol_hat = rhol_hat_models(compound_2CLJ, self.thermo_data_rhoL[:, 0], *chain_values)  # [kg/m3]
+        Psat_hat = Psat_hat_models(compound_2CLJ, self.thermo_data_Pv[:, 0], *chain_values)  # [kPa]
+        SurfTens_hat = SurfTens_hat_models(compound_2CLJ, self.thermo_data_SurfTens[:, 0], *chain_values)
+        # Compute properties at temperatures from experimental data
+
+        # Data likelihood: Compute likelihood based on gaussian penalty function
+        if self.properties == 'rhol':
+            logp += sum(dnorm(self.thermo_data_rhoL[:, 1], rhol_hat, self.t_rhol**-2.))
+            #logp += sum(dnorm(rhol_data,rhol_hat,t_rhol**-2.))
+        elif self.properties == 'Psat':
+            logp += sum(dnorm(self.thermo_data_Pv[:, 1], Psat_hat, self.t_Psat**-2.))
+        elif self.properties == 'rhol+Psat':
+            logp += sum(dnorm(self.thermo_data_rhoL[:, 1], rhol_hat, self.t_rhol**-2.))
+            logp += sum(dnorm(self.thermo_data_Pv[:, 1], Psat_hat, self.t_Psat**-2.))
+        elif self.properties == 'All':
+            logp += sum(dnorm(self.thermo_data_rhoL[:, 1], rhol_hat, self.t_rhol**-2.))
+            logp += sum(dnorm(self.thermo_data_Pv[:, 1], Psat_hat, self.t_Psat**-2.))
+            logp += sum(dnorm(self.thermo_data_SurfTens[:, 1], SurfTens_hat, self.t_SurfTens**-2))
+        if logp is math.nan:
+            logp = -1*math.inf
+        return logp
+
     def set_initial_state(self, prior, compound_2CLJ, initial_position=None):
         initial_logp = math.nan
         while math.isnan(initial_logp):
@@ -157,10 +199,10 @@ class MCMC_Simulation():
 
             rnorm = np.random.normal
 
-            initial_values[0] = rnorm(self.ff_params_ref[0][0], self.ff_params_ref[0][0] / 10)
-            initial_values[1] = rnorm(self.ff_params_ref[0][1], self.ff_params_ref[0][1] / 10)
-            initial_values[2] = rnorm(self.ff_params_ref[0][2], self.ff_params_ref[0][2] / 10)
-            initial_values[3] = rnorm(self.ff_params_ref[0][3], self.ff_params_ref[0][3] / 10)
+            initial_values[0] = rnorm(self.ff_params_ref[0][0], self.ff_params_ref[0][0] / 100)
+            initial_values[1] = rnorm(self.ff_params_ref[0][1], self.ff_params_ref[0][1] / 100)
+            initial_values[2] = rnorm(self.ff_params_ref[0][2], self.ff_params_ref[0][2] / 100)
+            initial_values[3] = rnorm(self.ff_params_ref[0][3], self.ff_params_ref[0][3] / 100)
 
             if initial_position is not None:
                 initial_values = initial_position

@@ -53,8 +53,8 @@ def create_param_triangle_plot_4D(trace,tracename,lit_values,properties,compound
                 if i != j:
                     bins = [[min(min(trace[:,j]),min(lit_values[:,j])),max(max(trace[:,j]),max(lit_values[:,j]))],[min(min(trace[:,i]),min(lit_values[:,i])),max(max(trace[:,i]),max(lit_values[:,i]))]]
                     if i == 0 and j == 1:
-                        axs[i,j].hist2d(lit_values[:,j],lit_values[:,i],bins=50,cmap='cool',label='RJMC Sampling')
-                        axs[i,j].scatter(trace[::4,j],trace[::4,i],color='0.25',marker='o',alpha=0.5,facecolors='none',label='Pareto Values')
+                        axs[i,j].scatter(lit_values[::4,j],lit_values[::4,i],color='0.25',marker='o',alpha=0.5,facecolors='none',label='Pareto Values')
+                        axs[i,j].hist2d(trace[:,j],trace[:,i],bins=50,cmap='cool',label='RJMC Sampling')
                     else:
                         axs[i,j].hist2d(trace[:,j],trace[:,i],bins=50,cmap='cool')
                         axs[i,j].scatter(lit_values[::4,j],lit_values[::4,i],color='0.25',marker='o',alpha=0.5,facecolors='none')
