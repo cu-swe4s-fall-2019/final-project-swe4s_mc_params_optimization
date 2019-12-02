@@ -45,8 +45,8 @@ setup(
     setup_requires=[] + pytest_runner,
 
     # Add entry points for various commands
-    entry_points = {
-        "console_scripts" : [
+    entry_points={
+        "console_scripts": [
             "gen_runfile = parambayes.create_runfile:main",
             "run_mcmc_sim = parambayes.mcmc_run_yaml:main"
         ]

@@ -4,6 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import yaml
 import scipy as sp
+import os
+
+abs_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Conversion constants
 
@@ -14,14 +17,16 @@ m2_to_nm2 = 1e18
 gm_to_kg = 1./1000
 J_to_kJ = 1./1000
 J_per_m3_to_kPA = 1./1000
-D_to_sqrtJm3 = 3.1623e-25 
+D_to_sqrtJm3 = 3.1623e-25
+
+
 
 class LennardJones_2C():
     def __init__(self,M_w):
         
         self.M_w = M_w
         
-        with open("data/DCLJQ_fluid.yaml") as yfile:
+        with open(abs_dir+"/data/DCLJQ_fluid.yaml") as yfile:
             yfile = yaml.load(yfile)#,Loader=yaml.FullLoader)
     
         self.T_c_star_params = np.array(yfile["correlation_parameters"]["Stoll"]["T_c_star_params"])
