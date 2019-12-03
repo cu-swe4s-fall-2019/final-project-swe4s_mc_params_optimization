@@ -45,7 +45,40 @@ class MCMC_Simulation():
         prior: class
             Initializing priors for RJMC sampling
         """
+        print(compound)
+        if compound == None or T_range == None or properties == None or n_points == None or steps == None:
+            raise ValueError('MCMC_Simulation: A vital simulation parameter is missing')
+        if compound not in ['C2H6','C2H2','C2H4','C2F4','C2Cl4','O2','N2','Br2','F2']:
+            raise ValueError("MCMC_Simulation: Compound is not available. \
+                             Available compounds are: 'C2H6','C2H2','C2H4','C2F4','C2Cl4','O2','N2','Br2','F2'")
+        if properties not in ['rhol+Psat','All']:
+            raise ValueError("MCMC_Simulation: Properties Not Implemented.  Currently Available: 'rhol+Psat','All'")
 
+        for T in T_range:
+            if not isinstance(T,(float,int)):
+                raise TypeError("MCMC_Simulation: T_range must be of type 'int' or 'float'")
+            if T < 0 or T > 1:
+                raise ValueError("MCMC_Simulation: T_range must be between 0 and 1 (fraction of T_c)")
+        if T_range[0] >= T_range[1]:
+            raise ValueError("MCMC_Simulation: First number in T range must be less than second")
+        if not isinstance(n_points,int):
+            raise TypeError("MCMC_Simulation.__init__: n_points must be of type 'int'")
+        if n_points <= 0:
+            raise ValueError("MCMC_Simulation.__init__: n_points must be of positive integer")
+        if not isinstance(steps,int):
+            raise TypeError("MCMC_Simulation.__init__: steps must be of type 'int'")
+        if steps <= 0:
+            raise ValueError("MCMC_Simulation.__init__: steps must be of positive integer")
+        if not isinstance(tune_freq,int):
+            raise TypeError("MCMC_Simulation.__init__: steps must be of type 'int'")
+        if tune_freq <= 0:
+            raise ValueError("MCMC_Simulation.__init__: steps must be of positive integer")
+        if not isinstance(tune_for,int):
+            raise TypeError("MCMC_Simulation.__init__: steps must be of type 'int'")
+        if tune_for <= 0:
+            raise ValueError("MCMC_Simulation.__init__: steps must be of positive integer")
+        
+        
         self.compound = compound
         self.T_range = T_range
         self.properties = properties
@@ -53,6 +86,7 @@ class MCMC_Simulation():
         self.steps = steps
         self.tune_for = tune_for
         self.tune_freq = tune_freq
+
 
     def get_attributes(self):
         """Return attributes of MCMC system
@@ -191,7 +225,7 @@ class MCMC_Simulation():
         if logp is math.nan:
             logp = -1*math.inf
         return logp
-
+    
     def set_initial_state(self, prior, compound_2CLJ, initial_position=None):
         initial_logp = math.nan
         while math.isnan(initial_logp):
