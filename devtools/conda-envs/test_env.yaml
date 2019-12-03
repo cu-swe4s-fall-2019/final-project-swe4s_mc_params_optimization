@@ -9,6 +9,11 @@ dependencies:
   - pytest
   - pytest-cov
   - codecov
+  - tqdm
+  - scipy
+  - numpy
+  - pandas
+  - pyyaml
 
     # Pip-only installs
   #- pip:
