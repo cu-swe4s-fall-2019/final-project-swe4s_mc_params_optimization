@@ -16,7 +16,6 @@ import pickle
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from shutil import rmtree
-from LennardJones_2Center_correlations import LennardJones_2C
 import warnings
 
 
@@ -170,10 +169,8 @@ class MCMC_Simulation():
             raise IndexError('MCMC_Simulation.calc_posterior: chain values must have length 4')
         for value in chain_values:
             if not isinstance(value,(int,float)):
-                raise TypeError('MCMC_Simulation.calc_posterior: chain values must all be floats or integers')
-        
-        if not isinstance(compound_2CLJ,LennardJones_2C):
-            raise TypeError('MCMC_Simulation.calc_posterior: compound_2CLJ must be instance of LennardJones_2C class')
+                raise TypeError('MCMC_Simulation.calc_posterior: chain values must all be floats or integers')       
+
         if not isinstance(prior,MCMC_Prior):
             raise TypeError('MCMC_Simulation.calc_posterior: prior must be instance of LennardJones_2C class')
         dnorm = distributions.norm.logpdf
