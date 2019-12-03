@@ -7,7 +7,11 @@ Created on Mon Dec  2 22:40:13 2019
 """
 
 import unittest
-from parambayes import MCMC_Simulation
+from parambayes import MCMC_Simulation,MCMC_Prior
+from LennardJones_2Center_correlations import LennardJones_2C
+
+import math
+
 
 
 def params():
@@ -227,6 +231,42 @@ class TestGetAttributes(unittest.TestCase):
             simulation_params['steps'])
         mcmc_dict = mcmc.get_attributes()
         for i in mcmc_dict:
-            print(i)
-            print(mcmc_dict[i])
             self.assertIsNotNone(mcmc_dict[i])
+            
+class TestPrepareData(unittest.TestCase):
+    pass
+
+class TestCalcPosterior(unittest.TestCase):
+    def setup():
+        mcmc_simulator = MCMC_Simulation(simulation_params['compound'],
+            simulation_params['trange'],
+            simulation_params['properties'],
+            simulation_params['number_data_points'],
+            simulation_params['steps'])
+        mcmc_simulator.prepare_data()
+        compound_2CLJ = LennardJones_2C(mcmc_simulator.M_w)
+        prior = MCMC_Prior(simulation_params['priors'])
+        prior.epsilon_prior()
+        prior.sigma_prior()
+        prior.L_prior()
+        prior.Q_prior()
+        return mcmc_simulator,compound_2CLJ,prior
+    
+    def test_correct_inputs(self):
+        mcmc_simulator,compound_2CLJ,prior=TestCalcPosterior.setup()
+        chain_values = [70,0.3,0.1,0.3]
+        self.assertRaises(TypeError,mcmc_simulator.calc_posterior,prior,compound_2CLJ,'string')
+        self.assertRaises(TypeError,mcmc_simulator.calc_posterior,prior,compound_2CLJ,1.1)
+        self.assertRaises(IndexError,mcmc_simulator.calc_posterior,prior,compound_2CLJ,chain_values[1:])
+        self.assertRaises(TypeError,mcmc_simulator.calc_posterior,'prior',compound_2CLJ,chain_values)
+        self.assertRaises(TypeError,mcmc_simulator.calc_posterior,prior,'C2H6',chain_values)
+        chain_values = [70,0.3,0.1,'blep']
+        self.assertRaises(TypeError,mcmc_simulator.calc_posterior,prior,compound_2CLJ,chain_values)
+    def test_nan_handle(self):
+        mcmc_simulator,compound_2CLJ,prior=TestCalcPosterior.setup()
+        chain_values = [70,0.3,math.nan,0.1]
+        self.assertWarns(UserWarning,mcmc_simulator.calc_posterior,prior,compound_2CLJ,chain_values)
+    
+
+    
+    

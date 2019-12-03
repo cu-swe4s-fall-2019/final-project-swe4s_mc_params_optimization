@@ -16,6 +16,8 @@ import pickle
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from shutil import rmtree
+from LennardJones_2Center_correlations import LennardJones_2C
+import warnings
 
 class MCMC_Simulation():
     """ Builds an object that runs an RJMC simulation based on the parameters the user gives to it
@@ -50,8 +52,8 @@ class MCMC_Simulation():
         if compound not in ['C2H6','C2H2','C2H4','C2F4','C2Cl4','O2','N2','Br2','F2']:
             raise ValueError("MCMC_Simulation: Compound is not available. \
                              Available compounds are: 'C2H6','C2H2','C2H4','C2F4','C2Cl4','O2','N2','Br2','F2'")
-        if properties not in ['rhol+Psat','All']:
-            raise ValueError("MCMC_Simulation: Properties Not Implemented.  Currently Available: 'rhol+Psat','All'")
+        if properties not in ['rhol+Psat','All','rhol','Psat']:
+            raise ValueError("MCMC_Simulation: Properties Not Implemented.  Currently Available: 'rhol+Psat','All','rhol','Psat'")
 
         for T in T_range:
             if not isinstance(T,(float,int)):
@@ -104,7 +106,22 @@ class MCMC_Simulation():
         """
 
         self.ff_params_ref, self.Tc_lit, self.M_w, thermo_data, self.NIST_bondlength = parse_data_ffs(self.compound)
-        # Retrieve force field literature values, constants, and thermo data
+        
+        if not isinstance(self.ff_params_ref,np.ndarray):
+            raise TypeError('MCMC_Simulation.prepare_data: expected to receive ff_params_ref as numpy array')
+        if np.shape(self.ff_params_ref)[1] != 4:
+            raise ValueError('MCMC_Simulation.prepare_data: expected ff_params_ref to have 4 columns')
+        if not isinstance(self.Tc_lit,np.ndarray):
+            raise TypeError('MCMC_Simulation.prepare_data: expected to receive Tc_lit as list')
+        if self.Tc_lit[0] <= 0:
+            raise ValueError('MCMC_Simulation.prepare_data: Tc_lit must be positive')
+        if self.M_w <= 0:
+            raise ValueError('MCMC_simulation.prepare_data: M_w must be positive')
+        if not isinstance(thermo_data,dict):
+            raise TypeError('MCMC_simulation.prepare_data: Expected to receive thermo_data as dict')
+        if self.NIST_bondlength <= 0:
+            raise ValueError('MCMC_simulation.prepare_data: NIST_bondlength should be positive')
+            # Retrieve force field literature values, constants, and thermo data
 
         self.T_min = self.T_range[0] * self.Tc_lit[0]
         self.T_max = self.T_range[1] * self.Tc_lit[0]
@@ -119,13 +136,11 @@ class MCMC_Simulation():
         uncertainties = calculate_uncertainties(thermo_data, self.Tc_lit[0])
         # Calculate uncertainties for each data point, based on combination of
         # experimental uncertainty and correlation uncertainty
-
         self.thermo_data_rhoL = np.asarray(thermo_data['rhoL'])
         self.thermo_data_Pv = np.asarray(thermo_data['Pv'])
         self.thermo_data_SurfTens = np.asarray(thermo_data['SurfTens'])
         # Convert dictionaries to numpy arrays
 
-        # RJMC stuff
 
         # Calculate the estimated standard deviation
         sd_rhol = uncertainties['rhoL'] / 2.
@@ -141,20 +156,28 @@ class MCMC_Simulation():
             self.lit_params, self.lit_devs = import_literature_values('two', self.compound)
         elif self.properties == 'All':
             self.lit_params, self.lit_devs = import_literature_values('three',self.compound)
+        else:
+            print('Warning: no reference data available for FF params; comparison is not possible')
             
     def calc_posterior(self, prior, compound_2CLJ, chain_values):
         # def calc_posterior(model,eps,sig,L,Q,biasing_factor_UA=0,biasing_factor_AUA=0,biasing_factor_AUA_Q=0):
 
+        if not isinstance(chain_values,(list,np.ndarray)):
+            raise TypeError('MCMC_Simulation.calc_posterior: chain values must be list or ndarray')
+        if np.shape(chain_values)[0] != 4:
+            raise IndexError('MCMC_Simulation.calc_posterior: chain values must have length 4')
+        for value in chain_values:
+            if not isinstance(value,(int,float)):
+                raise TypeError('MCMC_Simulation.calc_posterior: chain values must all be floats or integers')
+        
+        if not isinstance(compound_2CLJ,LennardJones_2C):
+            raise TypeError('MCMC_Simulation.calc_posterior: compound_2CLJ must be instance of LennardJones_2C class')
+        if not isinstance(prior,MCMC_Prior):
+            raise TypeError('MCMC_Simulation.calc_posterior: prior must be instance of LennardJones_2C class')
         dnorm = distributions.norm.logpdf
 
         logp = 0
         
-        '''
-        if chain_values[1] or chain_values[2] or chain_values[3] <= 0:
-            #disallow values below 0 as nonphysical
-            #print('Reject negative value')
-            logp = -1*np.inf
-        '''   
         
         logp += prior.sigma_prior_function.logpdf(chain_values[1], *prior.sigma_prior_values)
         logp += prior.epsilon_prior_function.logpdf(chain_values[0], *prior.epsilon_prior_values)
@@ -181,6 +204,9 @@ class MCMC_Simulation():
             logp += sum(dnorm(self.thermo_data_Pv[:, 1], Psat_hat, self.t_Psat**-2.))
             logp += sum(dnorm(self.thermo_data_SurfTens[:, 1], SurfTens_hat, self.t_SurfTens**-2))
 
+        if np.isnan(logp):
+            logp = -1* math.inf
+            warnings.warn('Warning: Proposed move returned logp of NaN. Setting logp to -inf')
         return logp
     
     def calc_posterior_emcee(self,chain_values,compound_2CLJ,prior)    :
