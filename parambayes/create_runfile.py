@@ -9,52 +9,114 @@ Created on Wed Nov 20 14:11:34 2019
 import yaml
 from datetime import date
 import os
+import argparse
+import json
 
-simulation_params = {}
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--compound",
+                        help="Name of the compound to retrieve data for",
+                        choices=["C2H2", "C2H4", "C2H6", "C2F4", "O2", "N2",
+                                 "Br2", "F2"],
+                        default="N2",
+                        type=str    
+    )
+    parser.add_argument("--properties",
+                        help="properties to sample from",
+                        choices=["All", "rhol", "rhol+Psat"],
+                        default="All",
+                        type=str,    
+    )
+    parser.add_argument("--trange",
+                        help="Reduced temperature range to pull samples from",
+                        nargs=2,
+                        type=float,
+                        default=[0.55, 0.95]
+    )
+    parser.add_argument("--n_steps",
+                        help="Number of steps to run the MCMC simulation for",
+                        default=1000000,
+                        type=int,
+    )
+    parser.add_argument("--n_data_points",
+                        help="number of thermoproperty data points to use",
+                        default=10,
+                        type=int,    
+    )
+    parser.add_argument("--priors_JSON",
+                        default='{"epsilon":["gamma",[134.665,0,0.2683]],' +
+                                '"sigma":["gamma",[2646.618,0,0.0001246]],' +
+                                '"L":["gamma",[53.1725,0,0.002059]],' +
+                                '"Q":["exponential",[0,1]]}',
+                        help="JSON formatted prior dictorionary." +
+                             "Example of a JSON input is shown below:\n" +
+                             '{"epsilon":["gamma",[134.665,0,0.2683]],' +
+                                '"sigma":["gamma",[2646.618,0,0.0001246]],' +
+                                '"L":["gamma",[53.1725,0,0.002059]],' +
+                                '"Q":["exponential",[0,1]]}',
+                        type=str,
+    )
+    parser.add_argument("--date",
+                        default="True",
+                        choices=["True", "False"],
+                        help="append date to the end of output label",
+                        type=str
+    )
+    parser.add_argument("--label",
+                        default="prod",
+                        help="file label for data output",
+                        type=str,
+    )
+    parser.add_argument("--save_traj",
+                        default="False",
+                        choices=["True", "False"],
+                        help="save trajectory to an output file",
+                        type=str,
+    )
+    args = parser.parse_args()
 
-#BASIC PARAMS
-simulation_params['compound'] = 'N2'
-# Compound to use (C2H2,C2H4,C2H6,C2F4,O2,N2,Br2,F2)
-simulation_params['properties'] = 'All'
-# Which properties to simulate ('rhol','rhol+Psat','All')
-simulation_params['trange'] = [0.55,0.95]
-#Temperature range (fraction of Tc)
-simulation_params['steps'] = 2000000
-#Number of MCMC steps
-simulation_params['swap_freq'] = 0.1
-#Frequency of model swaps
-simulation_params['number_data_points'] = 10
+    simulation_params = {}
 
-#[[72.21694778065564, 0, 0.5602885008739708], [1373.1569234248782, 0, 0.0002187094597278935], [24.898977020356103, 0, 0.0037408599155028944], [0.07855623224190525, 0, 0.8478830261261804]]
+    #BASIC PARAMS
+    simulation_params["compound"] = args.compound
+    # Compound to use (C2H2,C2H4,C2H6,C2F4,O2,N2,Br2,F2)
+    simulation_params["properties"] = args.properties
+    # Which properties to simulate ("rhol","rhol+Psat","All")
+    simulation_params["trange"] = args.trange
+    #Temperature range (fraction of Tc)
+    simulation_params["steps"] = args.n_steps
+    #Number of MCMC steps
+    simulation_params["number_data_points"] = args.n_data_points
 
-#[[134.6652855956637, 0, 0.26832299241910723], [2646.618017963573, 0, 0.0001245996481485222], [53.172495977171614, 0, 0.002059236619566919], [1.8099969497105[134.6652855956637, 0, 0.26832299241910723]484, 0, 0.06640261374979685]][134.6652855956637, 0, 0.26832299241910723]
+    #[[72.21694778065564, 0, 0.5602885008739708], [1373.1569234248782, 0, 0.0002187094597278935], [24.898977020356103, 0, 0.0037408599155028944], [0.07855623224190525, 0, 0.8478830261261804]]
 
-
-#CUSTOM SIMULATION OPTIONS
-simulation_params['priors'] = {'epsilon': ['gamma', [134.665,0,0.2683]],
-        'sigma': ['gamma', [2646.618, 0, 0.0001246]],
-        'L': ['gamma', [53.1725, 0, 0.002059]],
-        'Q': ['exponential', [0,1]]}
-#Options: exponential [loc (should always be 0), scale]
-#         gamma [alpha,beta,loc,scale]
-#See scipy.stats.expon and scipy.stats.gengamma
-
-#RECORDING OPTIONS
-simulation_params['save_traj'] = False
-#Saves trajectories
-simulation_params['label'] = 'test'
-#Label for output files
-today = str(date.today())
-
-if os.path.exists('runfiles') is False:
-    os.mkdir('runfiles')
-
-filename = 'runfiles/'+simulation_params['compound'] + '_'+simulation_params['properties']+'_'+simulation_params['label']+'_'+today+'.yml' 
+    #[[134.6652855956637, 0, 0.26832299241910723], [2646.618017963573, 0, 0.0001245996481485222], [53.172495977171614, 0, 0.002059236619566919], [1.8099969497105[134.6652855956637, 0, 0.26832299241910723]484, 0, 0.06640261374979685]][134.6652855956637, 0, 0.26832299241910723]
 
 
-def main():       
-    with open(filename,'w') as outfile:
+    #CUSTOM SIMULATION OPTIONS
+    simulation_params["priors"] = json.loads(args.priors_JSON)
+    #Options: exponential [loc (should always be 0), scale]
+    #         gamma [alpha,beta,loc,scale]
+    #See scipy.stats.expon and scipy.stats.gengamma
+
+    #RECORDING OPTIONS
+    simulation_params["save_traj"] = bool(args.save_traj)
+    #Saves trajectories
+    simulation_params["label"] = args.label
+    #Label for output files
+    today = ""
+    if bool(args.date) == True:
+        today = "_"+str(date.today())
+    
+    if os.path.exists("runfiles") is False:
+        os.mkdir("runfiles")
+
+    filename = "runfiles/"+simulation_params["compound"] + "_"+simulation_params["properties"]+"_"+simulation_params["label"]+today+".yml" 
+
+
+    with open(filename,"w") as outfile:
         yaml.dump(simulation_params,outfile,default_flow_style=False)
+    
 
 if __name__ == "__main__":
     main()

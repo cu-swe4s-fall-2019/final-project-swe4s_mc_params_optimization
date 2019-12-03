@@ -4,7 +4,6 @@ Bayesian MCMC parameterization for CSCI 7000 (swe4s) class project
 """
 
 # Add imports here
-print(__file__)
 from .parambayes import *
 
 # Handle versioneer
