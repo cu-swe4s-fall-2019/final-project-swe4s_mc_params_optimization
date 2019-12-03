@@ -4,6 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import yaml
 import scipy as sp
+import os
+
+abs_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Conversion constants
 
@@ -22,7 +25,7 @@ class LennardJones_2C():
 
         self.M_w = M_w
 
-        with open("data/DCLJQ_fluid.yaml") as yfile:
+        with open(abs_dir + "data/DCLJQ_fluid.yaml") as yfile:
             yfile = yaml.load(yfile)  # ,Loader=yaml.FullLoader)
 
         self.T_c_star_params = np.array(yfile["correlation_parameters"]

@@ -42,7 +42,8 @@ install:
 
 
 script:
-  - pytest -v --cov=parambayes parambayes/tests/
+  - pytest -v --cov=parambayes parambayes/tests/*.py
+  - bash parambayes/tests/*.sh
 
 notifications:
     email: false

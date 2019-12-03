@@ -7,7 +7,7 @@ Created on Wed Nov 20 14:09:21 2019
 """
 
 import yaml
-from LennardJones_2Center_correlations import LennardJones_2C
+from parambayes.LennardJones_2Center_correlations import LennardJones_2C
 from datetime import date
 from parambayes import MCMC_Simulation, MCMC_Prior
 import argparse
