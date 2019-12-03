@@ -44,6 +44,15 @@ setup(
     # Allows `setup.py test` to work correctly with pytest
     setup_requires=[] + pytest_runner,
 
+    # Add entry points for various commands
+    entry_points={
+        "console_scripts": [
+            "gen_runfile = parambayes.create_runfile:main",
+            "run_mcmc_sim = parambayes.mcmc_run_yaml:main"
+        ]
+
+    }
+
     # Additional entries you may want simply uncomment the lines you want and fill in the data
     # url='http://www.my_package.com',  # Website
     # install_requires=[],              # Required packages, pulls from pip if needed; do not use for Conda deployment

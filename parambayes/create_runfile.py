@@ -9,44 +9,155 @@ Created on Wed Nov 20 14:11:34 2019
 import yaml
 from datetime import date
 import os
-
-simulation_params = {}
-
-#BASIC PARAMS
-simulation_params['compound'] = 'C2H2'
-# Compound to use (C2H2,C2H4,C2H6,C2F4,O2,N2,Br2,F2)
-simulation_params['properties'] = 'rhol+Psat'
-# Which properties to simulate ('rhol','rhol+Psat','All')
-simulation_params['trange'] = [0.55,0.95]
-#Temperature range (fraction of Tc)
-simulation_params['steps'] = 2000000
-#Number of MCMC steps
-simulation_params['swap_freq'] = 0.1
-#Frequency of model swaps
-simulation_params['number_data_points'] = 10
+import argparse
+import sys
+import json
 
 
-#CUSTOM SIMULATION OPTIONS
-simulation_params['priors'] = {'epsilon': ['gamma', [134.665,0,0.2683]],
-        'sigma': ['gamma', [2646.618, 0, 0.0001246]],
-        'L': ['gamma', [53.1725, 0, 0.002059]],
-        'Q': ['exponential', [0,1]]}
-#Options: exponential [loc (should always be 0), scale]
-#         gamma [alpha,beta,loc,scale]
-#See scipy.stats.expon and scipy.stats.gengamma
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--compound",
+                        help="Name of the compound to retrieve data for",
+                        choices=["C2H2", "C2H4", "C2H6", "C2F4", "O2", "N2",
+                                 "Br2", "F2"],
+                        default="N2",
+                        type=str
+                        )
+    parser.add_argument("--properties",
+                        help="properties to sample from",
+                        choices=["All", "rhol", "rhol+Psat"],
+                        default="All",
+                        type=str,
+                        )
+    parser.add_argument("--trange",
+                        help="Reduced temperature range to pull samples from",
+                        nargs=2,
+                        type=float,
+                        default=[0.55, 0.95]
+                        )
+    parser.add_argument("--n_steps",
+                        help="Number of steps to run the MCMC simulation for",
+                        default=1000000,
+                        type=int,
+                        )
+    parser.add_argument("--n_data_points",
+                        help="number of thermoproperty data points to use",
+                        default=10,
+                        type=int,
+                        )
+    parser.add_argument("--priors_JSON",
+                        default='{"epsilon":["gamma",[134.665,0,0.2683]],' +
+                                '"sigma":["gamma",[2646.618,0,0.0001246]],' +
+                                '"L":["gamma",[53.1725,0,0.002059]],' +
+                                '"Q":["exponential",[0,1]]}',
+                        help="JSON formatted prior dictorionary." +
+                             "Example of a JSON input is shown below:\n" +
+                             '{"epsilon":["gamma",[134.665,0,0.2683]],' +
+                                '"sigma":["gamma",[2646.618,0,0.0001246]],' +
+                                '"L":["gamma",[53.1725,0,0.002059]],' +
+                                '"Q":["exponential",[0,1]]}',
+                        type=str,
+                        )
+    parser.add_argument("--date",
+                        default="True",
+                        choices=["True", "False"],
+                        help="append date to the end of output label",
+                        type=str
+                        )
+    parser.add_argument("--label",
+                        default="prod",
+                        help="file label for data output",
+                        type=str,
+                        )
+    parser.add_argument("--save_traj",
+                        default="False",
+                        choices=["True", "False"],
+                        help="save trajectory to an output file",
+                        type=str,
+                        )
+    args = parser.parse_args()
 
-#RECORDING OPTIONS
-simulation_params['save_traj'] = False
-#Saves trajectories
-simulation_params['label'] = 'test'
-#Label for output files
-today = str(date.today())
+    simulation_params = {}
 
-if os.path.exists('runfiles') is False:
-    os.mkdir('runfiles')
+    # BASIC PARAMS
+    simulation_params["compound"] = args.compound
+    # Compound to use (C2H2,C2H4,C2H6,C2F4,O2,N2,Br2,F2)
+    simulation_params["properties"] = args.properties
+    # Which properties to simulate ("rhol","rhol+Psat","All")
 
-filename = 'runfiles/'+simulation_params['compound'] + '_'+simulation_params['properties']+'_'+simulation_params['label']+'_'+today+'.yml' 
+    if all([g >= 0 and g <= 100 for g in args.trange]):
+        simulation_params["trange"] = args.trange
+    else:
+        print("create_runfile.py: trange provided is unphysical!",
+              file=sys.stderr)
+        sys.exit(1)
+    # Temperature range (fraction of Tc)
+    if args.n_steps > 0:
+        simulation_params["steps"] = args.n_steps
+    else:
+        print("create_runfile.py: --n_steps must be a positive integer!",
+              file=sys.stderr)
+        sys.exit(1)
+    # Number of MCMC steps
+    if args.n_data_points > 0:
+        simulation_params["number_data_points"] = args.n_data_points
+    else:
+        print("create_runfile.py: --n_data_points must be a positive integer!",
+              file=sys.stderr)
+        sys.exit(1)
+
+    # CUSTOM SIMULATION OPTIONS
+    try:
+        simulation_params["priors"] = json.loads(args.priors_JSON)
+    except json.decoder.JSONDecodeError:
+        print("create_runfile.py: Unable to load custom json input!",
+              file=sys.stderr)
+        sys.exit(1)
+
+    for key in simulation_params["priors"].keys():
+        if simulation_params["priors"][key][0] not in ["exponential", "gamma"]:
+            print("create_runfile.py:", simulation_params["priors"][key][0],
+                  "is an invalide prior distribution.",
+                  "Please select from exponential or gamma.", file=sys.stderr)
+            sys.exit(1)
+        if simulation_params["priors"][key][0] == "exponential":
+            if len(simulation_params["priors"][key][1]) != 2:
+                print("create_runfile.py: exponential distributions must",
+                      "have 2 inputs parameters", file=sys.stderr)
+                sys.exit(1)
+        if simulation_params["priors"][key][0] == "gamma":
+            if len(simulation_params["priors"][key][1]) != 3:
+                print("create_runfile.py: gamma distributions must",
+                      "have 3 inputs parameters", file=sys.stderr)
+                sys.exit(1)
+
+    # Options: exponential [loc (should always be 0), scale]
+    #         gamma [alpha,beta,loc,scale]
+    # See scipy.stats.expon and scipy.stats.gengamma
+
+    # RECORDING OPTIONS
+    simulation_params["save_traj"] = bool(args.save_traj)
+    # Saves trajectories
+    simulation_params["label"] = args.label
+    # Label for output files
+    today = ""
+    if bool(args.date):
+        today = "_" + str(date.today())
 
 
-with open(filename,'w') as outfile:
-    yaml.dump(simulation_params,outfile,default_flow_style=False)
+    if os.path.exists("runfiles") is False:
+        os.mkdir("runfiles")
+
+    filename = "runfiles/" + simulation_params["compound"] + "_" + \
+        simulation_params["properties"] + "_" + simulation_params["label"] + today + ".yml"
+
+    with open(filename, "w") as outfile:
+        yaml.dump(simulation_params, outfile, default_flow_style=False)
+
+    print("create_runfile.py: a run file has been written to " + filename)
+    print("Please edit this file to your simulation specifications.")
+
+
+if __name__ == "__main__":
+    main()
+

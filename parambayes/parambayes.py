@@ -5,19 +5,20 @@ Bayesian MCMC parameterization for CSCI 7000 (swe4s) class project
 Handles the primary functions
 """
 import numpy as np
-from data_import import filter_thermo_data,import_literature_values,parse_data_ffs,calculate_uncertainties
+from parambayes.data_import import filter_thermo_data, import_literature_values, parse_data_ffs, calculate_uncertainties
 from scipy.stats import distributions
 import math
-import os 
-from plotting import create_param_triangle_plot_4D,create_percent_dev_triangle_plot
-from utility import rhol_hat_models,Psat_hat_models,SurfTens_hat_models,T_c_hat_models,computePercentDeviations
-from datetime import date,datetime
+import os
+from parambayes.plotting import create_param_triangle_plot_4D, create_percent_dev_triangle_plot
+from parambayes.utility import rhol_hat_models, Psat_hat_models, SurfTens_hat_models, T_c_hat_models, computePercentDeviations
+from datetime import date, datetime
 import pickle
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 from shutil import rmtree
 from LennardJones_2Center_correlations import LennardJones_2C
 import warnings
+
 
 class MCMC_Simulation():
     """ Builds an object that runs an RJMC simulation based on the parameters the user gives to it
@@ -28,7 +29,7 @@ class MCMC_Simulation():
 
     """
 
-    def __init__(self, compound, T_range, properties, n_points, steps, 
+    def __init__(self, compound, T_range, properties, n_points, steps,
                  tune_freq=100, tune_for=10000):
         """Initializes the basic state of the simulator object.
 
@@ -99,7 +100,7 @@ class MCMC_Simulation():
             'T_range': self.T_range,
             'n_points': self.n_points,
             'steps': self.steps}
-        
+
     def prepare_data(self):
         """From input parameters, pull appropriate experimental data and
         uncertainty information.
@@ -151,14 +152,15 @@ class MCMC_Simulation():
         self.t_rhol = np.sqrt(1. / sd_rhol)
         self.t_Psat = np.sqrt(1. / sd_Psat)
         self.t_SurfTens = np.sqrt(1. / sd_SurfTens)
-        
-        if self.properties == 'rhol+Psat':    
+
+        if self.properties == 'rhol+Psat':
             self.lit_params, self.lit_devs = import_literature_values('two', self.compound)
         elif self.properties == 'All':
             self.lit_params, self.lit_devs = import_literature_values('three',self.compound)
         else:
             print('Warning: no reference data available for FF params; comparison is not possible')
-            
+            self.lit_params, self.lit_devs = import_literature_values('three', self.compound)
+
     def calc_posterior(self, prior, compound_2CLJ, chain_values):
         # def calc_posterior(model,eps,sig,L,Q,biasing_factor_UA=0,biasing_factor_AUA=0,biasing_factor_AUA_Q=0):
 
@@ -215,19 +217,19 @@ class MCMC_Simulation():
         dnorm = distributions.norm.logpdf
 
         logp = 0
-        
+
         '''
         if chain_values[1] or chain_values[2] or chain_values[3] <= 0:
             #disallow values below 0 as nonphysical
             #print('Reject negative value')
             logp = -1*np.inf
-        '''   
-        
+        '''
+
         logp += prior.sigma_prior_function.logpdf(chain_values[1], *prior.sigma_prior_values)
         logp += prior.epsilon_prior_function.logpdf(chain_values[0], *prior.epsilon_prior_values)
         logp += prior.Q_prior_function.logpdf(chain_values[3], *prior.Q_prior_values)
         logp += prior.L_prior_function.logpdf(chain_values[2], *prior.L_prior_values)
-            # Add priors for Q and L for AUA+Q model
+        # Add priors for Q and L for AUA+Q model
 
         rhol_hat = rhol_hat_models(compound_2CLJ, self.thermo_data_rhoL[:, 0], *chain_values)  # [kg/m3]
         Psat_hat = Psat_hat_models(compound_2CLJ, self.thermo_data_Pv[:, 0], *chain_values)  # [kPa]
@@ -250,7 +252,7 @@ class MCMC_Simulation():
         if logp is math.nan:
             logp = -1*math.inf
         return logp
-    
+
     def set_initial_state(self, prior, compound_2CLJ, initial_position=None):
         initial_logp = math.nan
         while math.isnan(initial_logp):
@@ -291,22 +293,22 @@ class MCMC_Simulation():
                                                                   SurfTens_hat_models,
                                                                   T_c_hat_models)
         self.new_lit_devs = []
-        for i in range(len(self.lit_params[:,0])):
+        for i in range(len(self.lit_params[:, 0])):
             self.new_lit_devs.append(computePercentDeviations(compound_2CLJ,
-                                                                      self.thermo_data_rhoL[:, 0],
-                                                                      self.thermo_data_Pv[:, 0],
-                                                                      self.thermo_data_SurfTens[:, 0],
-                                                                      self.lit_params[i],
-                                                                      self.thermo_data_rhoL[:, 1],
-                                                                      self.thermo_data_Pv[:, 1],
-                                                                      self.thermo_data_SurfTens[:, 1],
-                                                                      self.Tc_lit[0],
-                                                                      rhol_hat_models,
-                                                                      Psat_hat_models,
-                                                                      SurfTens_hat_models,
-                                                                      T_c_hat_models))
+                                                              self.thermo_data_rhoL[:, 0],
+                                                              self.thermo_data_Pv[:, 0],
+                                                              self.thermo_data_SurfTens[:, 0],
+                                                              self.lit_params[i],
+                                                              self.thermo_data_rhoL[:, 1],
+                                                              self.thermo_data_Pv[:, 1],
+                                                              self.thermo_data_SurfTens[:, 1],
+                                                              self.Tc_lit[0],
+                                                              rhol_hat_models,
+                                                              Psat_hat_models,
+                                                              SurfTens_hat_models,
+                                                              T_c_hat_models))
         self.new_lit_devs = np.asarray(self.new_lit_devs)
-        
+
     def MCMC_Outerloop(self, prior, compound_2CLJ):
         self.trace = [self.initial_values]
         self.logp_trace = [self.initial_logp]
@@ -353,7 +355,7 @@ class MCMC_Simulation():
                 self.move_acceptances = 0
 
                 #print('Tuning complete!')
-                #print('==============================')
+                # print('==============================')
         self.trace = np.asarray(self.trace)
         self.logp_trace = np.asarray(self.logp_trace)
         self.percent_dev_trace = np.asarray(self.percent_dev_trace)
@@ -362,26 +364,23 @@ class MCMC_Simulation():
         self.percent_dev_trace_tuned = self.percent_dev_trace[self.tune_for + 1:]
         print('Simulation Done!')
         print('==============================')
-        
+
     def MCMC_Steps(self, prior, compound_2CLJ):
         proposed_params = self.current_params.copy()
-
 
         proposed_params, proposed_log_prob = self.parameter_proposal(prior, proposed_params, compound_2CLJ)
         self.move_proposals += 1
         alpha = (proposed_log_prob - self.current_log_prob)
 
-        
         acceptance = self.accept_reject(alpha)
         if acceptance == 'True':
             new_log_prob = proposed_log_prob
             new_params = proposed_params
-            self.move_acceptances += 1            
+            self.move_acceptances += 1
 
         elif acceptance == 'False':
             new_log_prob = self.current_log_prob
             new_params = self.current_params
-   
 
         return new_params, new_log_prob, acceptance
 
@@ -394,11 +393,10 @@ class MCMC_Simulation():
             acceptance = 'False'
         return acceptance
 
-    
     def parameter_proposal(self, prior, proposed_params, compound_2CLJ):
 
         rnorm = np.random.normal
-        modified_param = int(np.random.randint(0,4))
+        modified_param = int(np.random.randint(0, 4))
 
         proposed_params[modified_param] = rnorm(proposed_params[modified_param], self.prop_sd[modified_param])
         proposed_log_prob = self.calc_posterior(prior, compound_2CLJ, proposed_params)
@@ -415,10 +413,8 @@ class MCMC_Simulation():
         elif acceptance_rate > 0.5:
             self.prop_sd *= 1.1
             # print('No')
-                
-    def write_output(self, prior_dict, tag=None, save_traj=False):
 
-	
+    def write_output(self, prior_dict, tag=None, save_traj=False):
 
         # Ask if output exists
         if os.path.isdir('../output') is False:
@@ -445,7 +441,6 @@ class MCMC_Simulation():
         plt.plot(self.logp_trace_tuned)
         plt.savefig(path + '/figures/logp_trace.png')
         plt.close()
-
 
         create_param_triangle_plot_4D(
             self.trace_tuned,
@@ -489,11 +484,10 @@ class MCMC_Simulation():
                       'Surface Tension Uncertainties': self.thermo_data_SurfTens[:, 2],
                       'Literature Critical Temperature': self.Tc_lit[0]}
 
-
         filename = path + '/datapoints.pkl'
 
         with open(filename, 'wb') as f:
-            pickle.dump(datapoints,f)
+            pickle.dump(datapoints, f)
 
     def write_metadata(self, path, prior_dict):
 
@@ -501,9 +495,7 @@ class MCMC_Simulation():
         filename = path + '/metadata.pkl'
 
         with open(filename, 'wb') as f:
-            pickle.dump(metadata,f)
-
-
+            pickle.dump(metadata, f)
 
     def write_traces(self, path):
         if os.path.isdir(path + '/trace') == False:
@@ -511,7 +503,8 @@ class MCMC_Simulation():
         np.save(path + '/trace/trace.npy', self.trace_tuned)
         np.save(path + '/trace/logp_trace.npy', self.logp_trace_tuned)
         np.save(path + '/trace/percent_dev_trace_tuned.npy', self.percent_dev_trace_tuned)
-        
+
+
 class MCMC_Prior():
     """ Sets up a prior based on the user-specified prior types and parameters
 
@@ -533,27 +526,27 @@ class MCMC_Prior():
 
         if eps_prior_type == 'exponential':
             self.epsilon_prior_function = self.dexp
-            self.epsilon_prior_values = [eps_prior_vals[0],eps_prior_vals[1]]
+            self.epsilon_prior_values = [eps_prior_vals[0], eps_prior_vals[1]]
         elif eps_prior_type == 'gamma':
             self.epsilon_prior_function = self.dgamma
-            self.epsilon_prior_values = [eps_prior_vals[0], eps_prior_vals[1],eps_prior_vals[2]]
+            self.epsilon_prior_values = [eps_prior_vals[0], eps_prior_vals[1], eps_prior_vals[2]]
 
     def sigma_prior(self):
         sig_prior_type, sig_prior_vals = self.prior_dict['sigma']
 
         if sig_prior_type == 'exponential':
             self.sigma_prior_function = self.dexp
-            self.sigma_prior_values = [sig_prior_vals[0],sig_prior_vals[1]]
+            self.sigma_prior_values = [sig_prior_vals[0], sig_prior_vals[1]]
         elif sig_prior_type == 'gamma':
             self.sigma_prior_function = self.dgamma
-            self.sigma_prior_values = [sig_prior_vals[0], sig_prior_vals[1],sig_prior_vals[2]]
+            self.sigma_prior_values = [sig_prior_vals[0], sig_prior_vals[1], sig_prior_vals[2]]
 
     def L_prior(self):
         L_prior_type, L_prior_vals = self.prior_dict['L']
 
         if L_prior_type == 'exponential':
             self.L_prior_function = self.dexp
-            self.L_prior_values = [L_prior_vals[0],L_prior_vals[1]]
+            self.L_prior_values = [L_prior_vals[0], L_prior_vals[1]]
         elif L_prior_type == 'gamma':
             self.L_prior_function = self.dgamma
             self.L_prior_values = [L_prior_vals[0], L_prior_vals[1], L_prior_vals[2]]
