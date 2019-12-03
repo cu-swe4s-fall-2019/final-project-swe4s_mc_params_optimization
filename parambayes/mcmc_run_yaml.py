@@ -9,26 +9,27 @@ Created on Wed Nov 20 14:09:21 2019
 import yaml
 from parambayes.LennardJones_2Center_correlations import LennardJones_2C
 from datetime import date
-from parambayes import MCMC_Simulation,MCMC_Prior
+from parambayes import MCMC_Simulation, MCMC_Prior
 import argparse
 
 
 def parse_input_yaml(filepath):
-    print('Loading simulation params from '+filepath+'...')
+    print('Loading simulation params from ' + filepath + '...')
     with open(filepath) as yfile:
-        simulation_params = yaml.load(yfile)#,Loader=yaml.FullLoader)
+        simulation_params = yaml.load(yfile)  # ,Loader=yaml.FullLoader)
     return simulation_params
+
 
 def basic(simulation_params):
 
-    print(simulation_params['priors'])    
+    print(simulation_params['priors'])
     prior = MCMC_Prior(simulation_params['priors'])
     prior.epsilon_prior()
     prior.sigma_prior()
     prior.L_prior()
     prior.Q_prior()
 
-    mcmc_simulator = MCMC_Simulation(simulation_params['compound'], 
+    mcmc_simulator = MCMC_Simulation(simulation_params['compound'],
                                      simulation_params['trange'],
                                      simulation_params['properties'],
                                      simulation_params['number_data_points'],
@@ -42,25 +43,30 @@ def basic(simulation_params):
     mcmc_simulator.set_initial_state(prior, compound_2CLJ)
 
     mcmc_simulator.MCMC_Outerloop(prior, compound_2CLJ)
-    
-    mcmc_simulator.write_output(simulation_params['priors'], tag=simulation_params['label'], save_traj=simulation_params['save_traj'])
 
-    path = '../output/' + simulation_params['compound'] + '/' + simulation_params['properties'] + '/' + simulation_params['compound'] + \
-            '_' + simulation_params['properties'] + '_' + str(simulation_params['steps']) + '_' + simulation_params['label'] + '_' + str(date.today()) +'/runfile.yaml'
+    mcmc_simulator.write_output(
+        simulation_params['priors'],
+        tag=simulation_params['label'],
+        save_traj=simulation_params['save_traj'])
 
-    
-    with open(path,'w') as outfile:
-        yaml.dump(simulation_params,outfile,default_flow_style=False)
-    
+    path = '../output/' + simulation_params['compound'] + '/' + \
+        simulation_params['properties'] + '/' + \
+        simulation_params['compound'] + \
+        '_' + simulation_params['properties'] + '_' + \
+        str(simulation_params['steps']) + '_' + simulation_params['label'] + \
+        '_' + str(date.today()) + '/runfile.yaml'
 
-        
+    with open(path, 'w') as outfile:
+        yaml.dump(simulation_params, outfile, default_flow_style=False)
+
+
 def main():
-    parser=argparse.ArgumentParser(description='Find YAML file')
-    
+    parser = argparse.ArgumentParser(description='Find YAML file')
+
     parser.add_argument('--filepath', '-f',
-                    type=str,
-                    help='',
-                    required=True)
+                        type=str,
+                        help='',
+                        required=True)
 
     args = parser.parse_args()
     filepath = args.filepath
@@ -68,8 +74,8 @@ def main():
     simulation_params = parse_input_yaml(filepath)
     basic(simulation_params)
 
-        
-    print('Finished!')   
+    print('Finished!')
+
 
 if __name__ == '__main__':
     main()

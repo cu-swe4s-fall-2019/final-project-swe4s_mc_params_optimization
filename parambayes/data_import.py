@@ -15,21 +15,21 @@ import os
 
 abs_dir = os.path.dirname(os.path.abspath(__file__))
 
-def filter_thermo_data(thermo_data,T_min,T_max,n_points):
-    for name in thermo_data:
-        df=thermo_data[name]
-        
 
-        df=df[df.values[:,0]>T_min]
-        df=df[df.values[:,0]<T_max]
-        if int(np.floor(df.shape[0]/(n_points-1))) == 0:
-            slicer=1
+def filter_thermo_data(thermo_data, T_min, T_max, n_points):
+    for name in thermo_data:
+        df = thermo_data[name]
+
+        df = df[df.values[:, 0] > T_min]
+        df = df[df.values[:, 0] < T_max]
+        if int(np.floor(df.shape[0] / (n_points - 1))) == 0:
+            slicer = 1
         else:
-            slicer=int(np.floor(df.shape[0]/(n_points-1)))
-        #print(slicer)
-        df=df[::slicer]
-        thermo_data[name]=df
-        
+            slicer = int(np.floor(df.shape[0] / (n_points - 1)))
+        # print(slicer)
+        df = df[::slicer]
+        thermo_data[name] = df
+
     return thermo_data
 
 def import_literature_values(criteria,compound):
@@ -46,32 +46,30 @@ def import_literature_values(criteria,compound):
     return lit_values,np.asarray(df2)
 
 
-
-def calculate_uncertainties(thermo_data,T_c):
-    u_dict={}
+def calculate_uncertainties(thermo_data, T_c):
+    u_dict = {}
     for name in thermo_data:
-        
-        #Extract data from our data arrays
-        data=np.asarray(thermo_data[name])
-        T=data[:,0]
-        values=data[:,1]
-        u_exp=data[:,2]
-        
-        pu_corr=uncertainty_models(T,T_c,name)
-        u_corr=pu_corr*values
-        
-        u_tot=np.sqrt(u_corr**2+u_exp**2)
-        u_dict[name]=u_tot
+
+        # Extract data from our data arrays
+        data = np.asarray(thermo_data[name])
+        T = data[:, 0]
+        values = data[:, 1]
+        u_exp = data[:, 2]
+
+        pu_corr = uncertainty_models(T, T_c, name)
+        u_corr = pu_corr * values
+
+        u_tot = np.sqrt(u_corr**2 + u_exp**2)
+        u_dict[name] = u_tot
     return u_dict
+
 
 def parse_data_ffs(compound):
     fname = abs_dir+"/data/lit_forcefields/"+compound+".yaml"
-    print(os.path.abspath(__file__))
-    print(os.path.abspath(''))
     with open(fname) as yfile:
-        yfile = yaml.load(yfile)#,Loader=yaml.FullLoader)
-    ff_params=[]
-    params=['eps_lit','sig_lit','Lbond_lit','Q_lit']
+        yfile = yaml.load(yfile)  # ,Loader=yaml.FullLoader)
+    ff_params = []
+    params = ['eps_lit', 'sig_lit', 'Lbond_lit', 'Q_lit']
     for name in params:
         ff_params.append(yfile["force_field_params"][name])
     
