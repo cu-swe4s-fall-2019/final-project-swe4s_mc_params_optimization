@@ -45,7 +45,6 @@ class MCMC_Simulation():
         prior: class
             Initializing priors for RJMC sampling
         """
-        print(compound)
         if compound == None or T_range == None or properties == None or n_points == None or steps == None:
             raise ValueError('MCMC_Simulation: A vital simulation parameter is missing')
         if compound not in ['C2H6','C2H2','C2H4','C2F4','C2Cl4','O2','N2','Br2','F2']:
