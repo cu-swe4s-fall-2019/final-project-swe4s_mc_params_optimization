@@ -10,6 +10,7 @@ import yaml
 from datetime import date
 import os
 import argparse
+import sys
 import json
 
 def main():
@@ -82,19 +83,58 @@ def main():
     # Compound to use (C2H2,C2H4,C2H6,C2F4,O2,N2,Br2,F2)
     simulation_params["properties"] = args.properties
     # Which properties to simulate ("rhol","rhol+Psat","All")
-    simulation_params["trange"] = args.trange
-    #Temperature range (fraction of Tc)
-    simulation_params["steps"] = args.n_steps
-    #Number of MCMC steps
-    simulation_params["number_data_points"] = args.n_data_points
 
+    if all([g >= 0 and g <= 100 for g in args.trange]):
+        simulation_params["trange"] = args.trange
+    else:
+        print("create_runfile.py: trange provided is unphysical!",
+              file=sys.stderr)
+        sys.exit(1)
+    #Temperature range (fraction of Tc)
+    if args.n_steps > 0:
+        simulation_params["steps"] = args.n_steps
+    else:
+        print("create_runfile.py: --n_steps must be a positive integer!",
+              file=sys.stderr)
+        sys.exit(1)
+    #Number of MCMC steps
+    if args.n_data_points > 0:
+        simulation_params["number_data_points"] = args.n_data_points
+    else:
+        print("create_runfile.py: --n_data_points must be a positive integer!",
+              file=sys.stderr)
+        sys.exit(1)
     #[[72.21694778065564, 0, 0.5602885008739708], [1373.1569234248782, 0, 0.0002187094597278935], [24.898977020356103, 0, 0.0037408599155028944], [0.07855623224190525, 0, 0.8478830261261804]]
 
     #[[134.6652855956637, 0, 0.26832299241910723], [2646.618017963573, 0, 0.0001245996481485222], [53.172495977171614, 0, 0.002059236619566919], [1.8099969497105[134.6652855956637, 0, 0.26832299241910723]484, 0, 0.06640261374979685]][134.6652855956637, 0, 0.26832299241910723]
 
 
     #CUSTOM SIMULATION OPTIONS
-    simulation_params["priors"] = json.loads(args.priors_JSON)
+    try:
+        simulation_params["priors"] = json.loads(args.priors_JSON)
+    except json.decoder.JSONDecodeError:
+        print("create_runfile.py: Unable to load custom json input!",
+              file=sys.stderr)
+        sys.exit(1)
+
+    for key in simulation_params["priors"].keys():
+        if simulation_params["priors"][key][0] not in ["exponential", "gamma"]:
+            print("create_runfile.py:", simulation_params["priors"][key][0], 
+            "is an invalide prior distribution.", 
+            "Please select from exponential or gamma.", file=sys.stderr)
+            sys.exit(1)
+        if simulation_params["priors"][key][0] == "exponential":
+            if len(simulation_params["priors"][key][1]) != 2:
+                print("create_runfile.py: exponential distributions must",
+                      "have 2 inputs parameters", file=sys.stderr)
+                sys.exit(1)
+        if simulation_params["priors"][key][0] == "gamma":
+            if len(simulation_params["priors"][key][1]) != 3:
+                print("create_runfile.py: gamma distributions must",
+                      "have 3 inputs parameters", file=sys.stderr)
+                sys.exit(1)
+
+
     #Options: exponential [loc (should always be 0), scale]
     #         gamma [alpha,beta,loc,scale]
     #See scipy.stats.expon and scipy.stats.gengamma
@@ -114,9 +154,12 @@ def main():
     filename = "runfiles/"+simulation_params["compound"] + "_"+simulation_params["properties"]+"_"+simulation_params["label"]+today+".yml" 
 
 
+
     with open(filename,"w") as outfile:
         yaml.dump(simulation_params,outfile,default_flow_style=False)
-    
+
+    print("create_runfile.py: a run file has been written to "+filename)
+    print("Please edit this file to your simulation specifications.")
 
 if __name__ == "__main__":
     main()
