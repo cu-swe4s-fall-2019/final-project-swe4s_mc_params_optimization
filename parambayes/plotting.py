@@ -134,9 +134,10 @@ def create_param_triangle_plot_4D(trace,tracename,lit_values,properties,compound
         handles0,labels0 = axs[0,0].get_legend_handles_labels()
         #plt.figlegend((label0,label1),('Literature','RJMC Sampling'))
         fig.legend(handles,labels,loc=[0.1,0.4])
-        plt.savefig(file_loc+tracename+'.png')
+        #plt.savefig(file_loc+tracename+'.png')
+        plt.show()
         plt.close()
-        #plt.show()
+        
     return
         
         
@@ -220,6 +221,8 @@ def create_percent_dev_triangle_plot(trace,tracename,lit_values,properties,compo
     handles,labels = axs[0,1].get_legend_handles_labels()
     fig.legend(handles,labels,loc=[0.05,0.3])
     
-    plt.savefig(file_loc+tracename+'.png')
+    #plt.savefig(file_loc+tracename+'.png')
+    plt.show()
     plt.close()
-    #plt.show()
+
+    return

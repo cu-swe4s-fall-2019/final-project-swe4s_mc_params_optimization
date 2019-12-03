@@ -21,14 +21,14 @@ def rhol_hat_models(compound_2CLJ,Temp,eps,sig,L,Q):
         
     return rhol_hat #[kg/m3]       
   
-def Psat_hat_models(compound_2CLJ,Temp,model,eps,sig,L,Q):
+def Psat_hat_models(compound_2CLJ,Temp,eps,sig,L,Q):
  
     
     Psat_hat = compound_2CLJ.Psat_hat_2CLJQ(Temp,eps,sig,L,Q) 
     
     return Psat_hat #[kPa]       
 
-def SurfTens_hat_models(compound_2CLJ,Temp,model,eps,sig,L,Q):
+def SurfTens_hat_models(compound_2CLJ,Temp,eps,sig,L,Q):
     '''
     L_nm=L/10
     sig_nm=sig/10
@@ -40,7 +40,7 @@ def SurfTens_hat_models(compound_2CLJ,Temp,model,eps,sig,L,Q):
             
     return SurfTens_hat
 
-def T_c_hat_models(compound_2CLJ,model,eps,sig,L,Q):
+def T_c_hat_models(compound_2CLJ,eps,sig,L,Q):
     '''
     L_nm=L/10
     sig_nm=sig/10

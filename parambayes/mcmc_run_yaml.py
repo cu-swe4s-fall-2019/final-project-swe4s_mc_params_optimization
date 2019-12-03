@@ -51,6 +51,7 @@ def basic(simulation_params):
     
     with open(path,'w') as outfile:
         yaml.dump(simulation_params,outfile,default_flow_style=False)
+    return mcmc_simulator
     
 
         
@@ -66,10 +67,11 @@ def main():
     filepath = args.filepath
     print('Parsing simulation params')
     simulation_params = parse_input_yaml(filepath)
-    basic(simulation_params)
+    mcmc_simulator = basic(simulation_params)
 
         
     print('Finished!')   
+    return mcmc_simulator
 
 if __name__ == '__main__':
-    main()
+    mcmc_simulator = main()
