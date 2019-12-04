@@ -34,8 +34,11 @@ def filter_thermo_data(thermo_data, T_min, T_max, n_points):
 
 
 def import_literature_values(criteria, compound):
-    df = pd.read_csv(abs_dir + '/data/Pareto_Hasse_' + criteria + '_criteria.txt',
-                     delimiter=' ', skiprows=2, usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8])
+    df = pd.read_csv(abs_dir + '/data/Pareto_Hasse_' +
+                     criteria + '_criteria.txt',
+                     delimiter=' ',
+                     skiprows=2,
+                     usecols=[0, 1, 2, 3, 4, 5, 6, 7, 8])
 
     df = df[df.Substance == compound]
     df1 = df.iloc[:, 1:5]
@@ -77,17 +80,21 @@ def parse_data_ffs(compound):
     ff_params_ref = np.transpose(np.asarray(ff_params))
     ff_params_ref[:, 1:] = ff_params_ref[:, 1:] / 10
 
-    Tc_lit = np.loadtxt(abs_dir + '/data/TRC_data/' + compound + '/Tc.txt', skiprows=1)
-    M_w = np.loadtxt(abs_dir + '/data/TRC_data/' + compound + '/Mw.txt', skiprows=1)
+    Tc_lit = np.loadtxt(abs_dir + '/data/TRC_data/' +
+                        compound + '/Tc.txt', skiprows=1)
+    M_w = np.loadtxt(abs_dir + '/data/TRC_data/' +
+                     compound + '/Mw.txt', skiprows=1)
 
-    df = pd.read_csv(abs_dir + '/data/NIST_bondlengths/NIST_bondlengths.txt', delimiter='\t')
+    df = pd.read_csv(abs_dir + '/data/NIST_bondlengths/NIST_bondlengths.txt',
+                     delimiter='\t')
     df = df[df.Compound == compound]
     NIST_bondlength = np.asarray(df)
 
     data = ['rhoL', 'Pv', 'SurfTens']
     data_dict = {}
     for name in data:
-        df = pd.read_csv(abs_dir + '/data/TRC_data/' + compound + '/' + name + '.txt', sep='\t')
+        df = pd.read_csv(abs_dir + '/data/TRC_data/' + compound + '/' + name +
+                         '.txt', sep='\t')
         df = df.dropna()
         data_dict[name] = df
     return ff_params_ref, Tc_lit, M_w, data_dict, NIST_bondlength[0][1] / 10

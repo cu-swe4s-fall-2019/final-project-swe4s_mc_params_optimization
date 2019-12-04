@@ -125,7 +125,8 @@ class MCMC_Simulation():
         '''
 
         logp += mcmc_prior.priors['sigma']['function'].logpdf(chain_values[1], *mcmc_prior.priors['sigma']['values'])
-        logp += mcmc_prior.priors['epsilon']['function'].logpdf(chain_values[0], *mcmc_prior.priors['epsilon']['values'])
+        logp += mcmc_prior.priors['epsilon']['function'].logpdf(
+            chain_values[0], *mcmc_prior.priors['epsilon']['values'])
         logp += mcmc_prior.priors['Q']['function'].logpdf(chain_values[3], *mcmc_prior.priors['Q']['values'])
         logp += mcmc_prior.priors['L']['function'].logpdf(chain_values[2], *mcmc_prior.priors['L']['values'])
         # Add priors for Q and L for AUA+Q model
@@ -426,27 +427,28 @@ class MCMC_Prior():
         self.dlogit = distributions.logistic
         self.dexp = distributions.expon
         self.str_2_fxn_map = {
-                              "exponential":self.dexp,
-                              "gamma":self.dgamma,
-                              "gengamma":self.dgengamma,
-                              "uniform":self.duni,
-                              "logistic":self.dlogit,
-                              "normal":self.dnorm,
-                             }
-        for method in  [prior_dict[a][0] for a in self.prior_dict.keys()]:
+            "exponential": self.dexp,
+            "gamma": self.dgamma,
+            "gengamma": self.dgengamma,
+            "uniform": self.duni,
+            "logistic": self.dlogit,
+            "normal": self.dnorm,
+        }
+        for method in [prior_dict[a][0] for a in self.prior_dict.keys()]:
             if method not in self.str_2_fxn_map.keys():
-                raise KeyError("parambayes.py:MCMC_Prior: " + 
+                raise KeyError("parambayes.py:MCMC_Prior: " +
                                method +
                                " is not implemented in MCMC_Prior.\n" +
-                               "Please select from the following distributions:\n" + 
+                               "Please select from the following distributions:\n" +
                                ", ".join(self.str_2_fxn_map.keys()))
-
 
     def make_priors(self):
         self.priors = {}
         for prior in self.prior_dict.keys():
-            self.priors[prior] = {"function":self.str_2_fxn_map[self.prior_dict[prior][0]],
-                             "values":self.prior_dict[prior][1]
-                            }
+            self.priors[prior] = {"function": self.str_2_fxn_map[self.prior_dict[prior][0]],
+                                  "values": self.prior_dict[prior][1]
+                                  }
+
+
 def main():
     pass
