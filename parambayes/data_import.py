@@ -6,8 +6,6 @@ Created on Tue Nov 19 21:26:41 2019
 @author: owenmadin
 """
 import numpy as np
-import scipy as sp
-import matplotlib.pyplot as plt
 import pandas as pd
 import yaml
 from parambayes.uncertainty_models import uncertainty_models
