@@ -11,6 +11,7 @@ import math
 import os
 from parambayes.plotting import create_param_triangle_plot_4D, create_percent_dev_triangle_plot
 from parambayes.utility import rhol_hat_models, Psat_hat_models, SurfTens_hat_models, T_c_hat_models, computePercentDeviations
+from parambayes.LennardJones_2Center_correlations import LennardJones_2C
 from datetime import date, datetime
 import pickle
 import matplotlib.pyplot as plt
@@ -171,17 +172,22 @@ class MCMC_Simulation():
             if not isinstance(value,(int,float)):
                 raise TypeError('MCMC_Simulation.calc_posterior: chain values must all be floats or integers')       
 
-        if not isinstance(prior,MCMC_Prior):
+        if not isinstance(mcmc_prior,MCMC_Prior):
+            raise TypeError('MCMC_Simulation.calc_posterior: prior must be instance of MCMC_Prior class')
+        if not isinstance(compound_2CLJ, LennardJones_2C):
             raise TypeError('MCMC_Simulation.calc_posterior: prior must be instance of LennardJones_2C class')
+
+        
         dnorm = distributions.norm.logpdf
 
         logp = 0
         
         
-        logp += prior.sigma_prior_function.logpdf(chain_values[1], *prior.sigma_prior_values)
-        logp += prior.epsilon_prior_function.logpdf(chain_values[0], *prior.epsilon_prior_values)
-        logp += prior.Q_prior_function.logpdf(chain_values[3], *prior.Q_prior_values)
-        logp += prior.L_prior_function.logpdf(chain_values[2], *prior.L_prior_values)
+        logp += mcmc_prior.priors['sigma']['function'].logpdf(chain_values[1], *mcmc_prior.priors['sigma']['values'])
+        logp += mcmc_prior.priors['epsilon']['function'].logpdf(
+            chain_values[0], *mcmc_prior.priors['epsilon']['values'])
+        logp += mcmc_prior.priors['Q']['function'].logpdf(chain_values[3], *mcmc_prior.priors['Q']['values'])
+        logp += mcmc_prior.priors['L']['function'].logpdf(chain_values[2], *mcmc_prior.priors['L']['values'])
             # Add priors for Q and L for AUA+Q model
 
         rhol_hat = rhol_hat_models(compound_2CLJ, self.thermo_data_rhoL[:, 0], *chain_values)  # [kg/m3]
@@ -208,7 +214,7 @@ class MCMC_Simulation():
             warnings.warn('Warning: Proposed move returned logp of NaN. Setting logp to -inf')
         return logp
     
-    def calc_posterior_emcee(self,chain_values,compound_2CLJ,prior)    :
+    def calc_posterior_emcee(self,chain_values,compound_2CLJ,mcmc_prior)    :
             # def calc_posterior(model,eps,sig,L,Q,biasing_factor_UA=0,biasing_factor_AUA=0,biasing_factor_AUA_Q=0):
 
         dnorm = distributions.norm.logpdf
