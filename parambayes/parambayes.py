@@ -410,6 +410,13 @@ class MCMC_Prior():
     """
 
     def __init__(self, prior_dict):
+
+        if not isinstance(prior_dict, dict):
+            raise TypeError("parambayes.py:MCMC_Prior: prior_dict must be a dictionary!")
+        for key in prior_dict.keys():
+            if not isinstance(key, str):
+                raise TypeError("parambayes.py:MCMC_Prior: prior_dict keys must be strings!")
+
         self.prior_dict = prior_dict
 
         self.dnorm = distributions.norm
@@ -418,7 +425,22 @@ class MCMC_Prior():
         self.duni = distributions.uniform
         self.dlogit = distributions.logistic
         self.dexp = distributions.expon
-        self.str_2_fxn_map = {"exponential":self.dexp, "gamma":self.dgamma}
+        self.str_2_fxn_map = {
+                              "exponential":self.dexp,
+                              "gamma":self.dgamma,
+                              "gengamma":self.dgengamma,
+                              "uniform":self.duni,
+                              "logistic":self.dlogit,
+                              "normal":self.dnorm,
+                             }
+        for method in  [prior_dict[a][0] for a in self.prior_dict.keys()]:
+            if method not in self.str_2_fxn_map.keys():
+                raise KeyError("parambayes.py:MCMC_Prior: " + 
+                               method +
+                               " is not implemented in MCMC_Prior.\n" +
+                               "Please select from the following distributions:\n" + 
+                               ", ".join(self.str_2_fxn_map.keys()))
+
 
     def make_priors(self):
         self.priors = {}
