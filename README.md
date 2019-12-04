@@ -1,8 +1,8 @@
 ParamBayes
 ==============================
 [//]: # (Badges)
-[![Travis Build Status](https://travis-ci.org/REPLACE_WITH_OWNER_ACCOUNT/ParamBayes.svg?branch=master)](https://travis-ci.org/REPLACE_WITH_OWNER_ACCOUNT/ParamBayes)
-[![codecov](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/ParamBayes/branch/master/graph/badge.svg)](https://codecov.io/gh/REPLACE_WITH_OWNER_ACCOUNT/ParamBayes/branch/master)
+[![Build Status](https://travis-ci.com/cu-swe4s-fall-2019/final-project-swe4s_mc_params_optimization.svg?branch=master)](https://travis-ci.com/cu-swe4s-fall-2019/final-project-swe4s_mc_params_optimization)
+[![codecov](https://codecov.io/gh/cu-swe4s-fall-2019/final-project-swe4s_mc_params_optimization/branch/master/graph/badge.svg)](https://codecov.io/gh/cu-swe4s-fall-2019/final-project-swe4s_mc_params_optimization/branch/master)
 
 Bayesian MCMC parameterization for CSCI 7000 (swe4s) class project
 
