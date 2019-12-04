@@ -105,6 +105,7 @@ def main():
         print("create_runfile.py: --n_data_points must be a positive integer!",
               file=sys.stderr)
         sys.exit(1)
+<<<<<<< HEAD
     # [[72.21694778065564, 0, 0.5602885008739708],
     #  [1373.1569234248782, 0, 0.0002187094597278935],
     #  [24.898977020356103, 0, 0.0037408599155028944],
@@ -116,6 +117,8 @@ def main():
     #  [1.8099969497105[134.6652855956637, 0, 0.26832299241910723],
     #  [484, 0, 0.06640261374979685],
     #  [134.6652855956637, 0, 0.26832299241910723]]
+=======
+>>>>>>> e17ba2aeadf2df3174a33d52eb7577e44dfee6ec
 
     # CUSTOM SIMULATION OPTIONS
     try:
@@ -155,6 +158,7 @@ def main():
     if bool(args.date):
         today = "_" + str(date.today())
 
+
     if os.path.exists("runfiles") is False:
         os.mkdir("runfiles")
 
@@ -172,3 +176,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
