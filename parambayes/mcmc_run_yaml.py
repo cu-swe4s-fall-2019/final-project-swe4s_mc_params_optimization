@@ -23,11 +23,8 @@ def parse_input_yaml(filepath):
 def basic(simulation_params):
 
     print(simulation_params['priors'])
-    prior = MCMC_Prior(simulation_params['priors'])
-    prior.epsilon_prior()
-    prior.sigma_prior()
-    prior.L_prior()
-    prior.Q_prior()
+    mcmc_prior = MCMC_Prior(simulation_params['priors'])
+    mcmc_prior.make_priors()
 
     mcmc_simulator = MCMC_Simulation(simulation_params['compound'],
                                      simulation_params['trange'],
@@ -40,9 +37,9 @@ def basic(simulation_params):
     print('Simulation Attributes:', mcmc_simulator.get_attributes())
 
     compound_2CLJ = LennardJones_2C(mcmc_simulator.M_w)
-    mcmc_simulator.set_initial_state(prior, compound_2CLJ)
+    mcmc_simulator.set_initial_state(mcmc_prior, compound_2CLJ)
 
-    mcmc_simulator.MCMC_Outerloop(prior, compound_2CLJ)
+    mcmc_simulator.MCMC_Outerloop(mcmc_prior, compound_2CLJ)
 
     mcmc_simulator.write_output(
         simulation_params['priors'],
