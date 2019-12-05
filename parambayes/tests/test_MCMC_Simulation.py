@@ -9,8 +9,11 @@ Created on Mon Dec  2 22:40:13 2019
 import unittest
 from parambayes import MCMC_Simulation,MCMC_Prior
 from parambayes.LennardJones_2Center_correlations import LennardJones_2C
+<<<<<<< HEAD:parambayes/test_MCMC_Simulation.py
 import numpy as np
 import copy
+=======
+>>>>>>> 9d7ca9cb7c0ed3ddd2811a2e666ab7a89d74f669:parambayes/tests/test_MCMC_Simulation.py
 
 import math
 
@@ -248,10 +251,7 @@ class TestCalcPosterior(unittest.TestCase):
         mcmc_simulator.prepare_data()
         compound_2CLJ = LennardJones_2C(mcmc_simulator.M_w)
         prior = MCMC_Prior(simulation_params['priors'])
-        prior.epsilon_prior()
-        prior.sigma_prior()
-        prior.L_prior()
-        prior.Q_prior()
+        prior.make_priors()
         return mcmc_simulator,compound_2CLJ,prior
     
     def test_correct_inputs(self):

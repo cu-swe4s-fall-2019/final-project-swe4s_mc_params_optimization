@@ -148,8 +148,10 @@ def main():
     if os.path.exists("runfiles") is False:
         os.mkdir("runfiles")
 
-    filename = "runfiles/" + simulation_params["compound"] + "_" + \
-        simulation_params["properties"] + "_" + simulation_params["label"] + today + ".yml"
+    filename = "runfiles/" + simulation_params["compound"] + "_"
+    filename += simulation_params["properties"] + "_"
+    filename += simulation_params["label"]
+    filename += today + ".yml"
 
     with open(filename, "w") as outfile:
         yaml.dump(simulation_params, outfile, default_flow_style=False)

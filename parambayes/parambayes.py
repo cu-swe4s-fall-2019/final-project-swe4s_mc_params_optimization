@@ -11,6 +11,7 @@ import math
 import os
 from parambayes.plotting import create_param_triangle_plot_4D, create_percent_dev_triangle_plot
 from parambayes.utility import rhol_hat_models, Psat_hat_models, SurfTens_hat_models, T_c_hat_models, computePercentDeviations
+from parambayes.LennardJones_2Center_correlations import LennardJones_2C
 from datetime import date, datetime
 from parambayes.LennardJones_2Center_correlations import LennardJones_2C
 import pickle
@@ -161,7 +162,7 @@ class MCMC_Simulation():
             print('Warning: no reference data available for FF params; comparison is not possible')
             self.lit_params, self.lit_devs = import_literature_values('three', self.compound)
 
-    def calc_posterior(self, prior, compound_2CLJ, chain_values):
+    def calc_posterior(self, mcmc_prior, compound_2CLJ, chain_values):
         # def calc_posterior(model,eps,sig,L,Q,biasing_factor_UA=0,biasing_factor_AUA=0,biasing_factor_AUA_Q=0):
 
         if not isinstance(chain_values,(list,np.ndarray)):
@@ -173,17 +174,19 @@ class MCMC_Simulation():
                 raise TypeError('MCMC_Simulation.calc_posterior: chain values must all be floats or integers')       
         if not isinstance(compound_2CLJ,LennardJones_2C):
             raise TypeError('MCMC_Simulation.calc_posterior: compound_2CLJ must be instance of LennardJones_2C class')
-        if not isinstance(prior,MCMC_Prior):
+        if not isinstance(mcmc_prior,MCMC_Prior):
             raise TypeError('MCMC_Simulation.calc_posterior: prior must be instance of MCMC_Prior class')
+
         dnorm = distributions.norm.logpdf
 
         logp = 0
         
         
-        logp += prior.sigma_prior_function.logpdf(chain_values[1], *prior.sigma_prior_values)
-        logp += prior.epsilon_prior_function.logpdf(chain_values[0], *prior.epsilon_prior_values)
-        logp += prior.Q_prior_function.logpdf(chain_values[3], *prior.Q_prior_values)
-        logp += prior.L_prior_function.logpdf(chain_values[2], *prior.L_prior_values)
+        logp += mcmc_prior.priors['sigma']['function'].logpdf(chain_values[1], *mcmc_prior.priors['sigma']['values'])
+        logp += mcmc_prior.priors['epsilon']['function'].logpdf(
+            chain_values[0], *mcmc_prior.priors['epsilon']['values'])
+        logp += mcmc_prior.priors['Q']['function'].logpdf(chain_values[3], *mcmc_prior.priors['Q']['values'])
+        logp += mcmc_prior.priors['L']['function'].logpdf(chain_values[2], *mcmc_prior.priors['L']['values'])
             # Add priors for Q and L for AUA+Q model
 
         rhol_hat = rhol_hat_models(compound_2CLJ, self.thermo_data_rhoL[:, 0], *chain_values)  # [kg/m3]
@@ -210,8 +213,8 @@ class MCMC_Simulation():
             warnings.warn('Warning: Proposed move returned logp of NaN. Setting logp to -inf')
         return logp
 
-    def set_initial_state(self, prior, compound_2CLJ, initial_position=None):
-        if not isinstance(prior,MCMC_Prior):
+    def set_initial_state(self, mcmc_prior, compound_2CLJ, initial_position=None):
+        if not isinstance(mcmc_prior,MCMC_Prior):
             raise TypeError('MCMC_Simulation.set_initial_state: prior must be an instance of MCMC_Prior object')
         if not isinstance(compound_2CLJ,LennardJones_2C):
             raise TypeError('MCMC_Simulation.set_initial_state: compound_2CLJ must be an instance of LennardJones_2C object')
@@ -223,7 +226,7 @@ class MCMC_Simulation():
             for value in initial_position:
                 if not isinstance(value, (float,int)):
                     raise TypeError('MCMC_Simulation.set_intial_state: user supplied initial position must be list of floats or ints')
-        
+                    
         initial_logp = math.nan
         while math.isnan(initial_logp):
             initial_values = np.empty(4)
@@ -241,7 +244,7 @@ class MCMC_Simulation():
             print('==============================')
             self.n_params = len(initial_values)
             self.prop_sd = np.asarray(initial_values) / 100
-            initial_logp = self.calc_posterior(prior, compound_2CLJ, initial_values)
+            initial_logp = self.calc_posterior(mcmc_prior, compound_2CLJ, initial_values)
             if math.isnan(initial_logp):
                 print('Nan detected! Finding new values')
 
@@ -480,12 +483,19 @@ class MCMC_Simulation():
 
 
 class MCMC_Prior():
-    """ Sets up a prior based on the user-specified prior types and parameters
+    """Sets up a prior based on the user-specified prior types and parameters
 
     Attributes
     """
 
     def __init__(self, prior_dict):
+
+        if not isinstance(prior_dict, dict):
+            raise TypeError("parambayes.py:MCMC_Prior: prior_dict must be a dictionary!")
+        for key in prior_dict.keys():
+            if not isinstance(key, str):
+                raise TypeError("parambayes.py:MCMC_Prior: prior_dict keys must be strings!")
+
         self.prior_dict = prior_dict
 
         self.dnorm = distributions.norm
@@ -494,46 +504,28 @@ class MCMC_Prior():
         self.duni = distributions.uniform
         self.dlogit = distributions.logistic
         self.dexp = distributions.expon
+        self.str_2_fxn_map = {
+            "exponential": self.dexp,
+            "gamma": self.dgamma,
+            "gengamma": self.dgengamma,
+            "uniform": self.duni,
+            "logistic": self.dlogit,
+            "normal": self.dnorm,
+        }
+        for method in [prior_dict[a][0] for a in self.prior_dict.keys()]:
+            if method not in self.str_2_fxn_map.keys():
+                raise KeyError("parambayes.py:MCMC_Prior: " +
+                               method +
+                               " is not implemented in MCMC_Prior.\n" +
+                               "Please select from the following distributions:\n" +
+                               ", ".join(self.str_2_fxn_map.keys()))
 
-    def epsilon_prior(self):
-        eps_prior_type, eps_prior_vals = self.prior_dict['epsilon']
-
-        if eps_prior_type == 'exponential':
-            self.epsilon_prior_function = self.dexp
-            self.epsilon_prior_values = [eps_prior_vals[0], eps_prior_vals[1]]
-        elif eps_prior_type == 'gamma':
-            self.epsilon_prior_function = self.dgamma
-            self.epsilon_prior_values = [eps_prior_vals[0], eps_prior_vals[1], eps_prior_vals[2]]
-
-    def sigma_prior(self):
-        sig_prior_type, sig_prior_vals = self.prior_dict['sigma']
-
-        if sig_prior_type == 'exponential':
-            self.sigma_prior_function = self.dexp
-            self.sigma_prior_values = [sig_prior_vals[0], sig_prior_vals[1]]
-        elif sig_prior_type == 'gamma':
-            self.sigma_prior_function = self.dgamma
-            self.sigma_prior_values = [sig_prior_vals[0], sig_prior_vals[1], sig_prior_vals[2]]
-
-    def L_prior(self):
-        L_prior_type, L_prior_vals = self.prior_dict['L']
-
-        if L_prior_type == 'exponential':
-            self.L_prior_function = self.dexp
-            self.L_prior_values = [L_prior_vals[0], L_prior_vals[1]]
-        elif L_prior_type == 'gamma':
-            self.L_prior_function = self.dgamma
-            self.L_prior_values = [L_prior_vals[0], L_prior_vals[1], L_prior_vals[2]]
-
-    def Q_prior(self):
-        Q_prior_type, Q_prior_vals = self.prior_dict['Q']
-
-        if Q_prior_type == 'exponential':
-            self.Q_prior_function = self.dexp
-            self.Q_prior_values = [Q_prior_vals[0], Q_prior_vals[1]]
-        elif Q_prior_type == 'gamma':
-            self.Q_prior_function = self.dgamma
-            self.Q_prior_values = [Q_prior_vals[0], Q_prior_vals[1], Q_prior_vals[2]]
+    def make_priors(self):
+        self.priors = {}
+        for prior in self.prior_dict.keys():
+            self.priors[prior] = {"function": self.str_2_fxn_map[self.prior_dict[prior][0]],
+                                  "values": self.prior_dict[prior][1]
+                                  }
 
 
 def main():
