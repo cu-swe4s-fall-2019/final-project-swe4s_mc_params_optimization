@@ -9,11 +9,8 @@ Created on Mon Dec  2 22:40:13 2019
 import unittest
 from parambayes import MCMC_Simulation,MCMC_Prior
 from parambayes.LennardJones_2Center_correlations import LennardJones_2C
-<<<<<<< HEAD:parambayes/test_MCMC_Simulation.py
 import numpy as np
 import copy
-=======
->>>>>>> 9d7ca9cb7c0ed3ddd2811a2e666ab7a89d74f669:parambayes/tests/test_MCMC_Simulation.py
 
 import math
 
