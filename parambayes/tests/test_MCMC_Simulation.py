@@ -26,7 +26,7 @@ def params():
     # Which properties to simulate ('rhol','rhol+Psat','All')
     simulation_params['trange'] = [0.55, 0.95]
     # Temperature range (fraction of Tc)
-    simulation_params['steps'] = 12000
+    simulation_params['steps'] = 200
     # Number of MCMC steps
     simulation_params['number_data_points'] = 10
 
@@ -302,13 +302,30 @@ class TestMCMCOuterLoop(unittest.TestCase):
             simulation_params['trange'],
             simulation_params['properties'],
             simulation_params['number_data_points'],
-            simulation_params['steps'])
+            simulation_params['steps'],
+            tune_for=100,
+            tune_freq=50)
         mcmc_simulator.prepare_data()
         compound_2CLJ = LennardJones_2C(mcmc_simulator.M_w)
         prior = MCMC_Prior(simulation_params['priors'])
         prior.make_priors()
         mcmc_simulator.set_initial_state(prior,compound_2CLJ)
         return mcmc_simulator,compound_2CLJ,prior
+    def test_inputs(self):
+        mcmc_simulator,compound_2CLJ,prior = TestMCMCOuterLoop.setup()
+        self.assertRaises(TypeError,mcmc_simulator.MCMC_Outerloop,prior,'text')
+        self.assertRaises(TypeError,mcmc_simulator.MCMC_Outerloop,'text',compound_2CLJ)
+    def test_outputs(self):
+         mcmc_simulator,compound_2CLJ,prior = TestMCMCOuterLoop.setup()
+         mcmc_simulator.MCMC_Outerloop(prior,compound_2CLJ)
+         self.assertEqual(len(mcmc_simulator.logp_trace),mcmc_simulator.steps+1)
+         self.assertEqual(len(mcmc_simulator.trace),mcmc_simulator.steps+1)
+         self.assertEqual(len(mcmc_simulator.percent_dev_trace),mcmc_simulator.steps+1)
+         self.assertEqual(len(mcmc_simulator.logp_trace_tuned),mcmc_simulator.steps-mcmc_simulator.tune_for)
+         self.assertEqual(len(mcmc_simulator.trace_tuned),mcmc_simulator.steps-mcmc_simulator.tune_for)
+         self.assertEqual(len(mcmc_simulator.percent_dev_trace_tuned),mcmc_simulator.steps-mcmc_simulator.tune_for)
+         self.assertGreaterEqual(mcmc_simulator.move_proposals,mcmc_simulator.move_acceptances)
+                  
 
 class TestAcceptReject(unittest.TestCase):
     def test_inputs(self):
@@ -341,10 +358,98 @@ class TestParameterProposal(unittest.TestCase):
         new_params, proposed_log_prob = mcmc_simulator.parameter_proposal(prior,proposed_params,compound_2CLJ)
         self.assertNotEqual(new_params,params)
 
-#class Test
+class TestMCMCSteps(unittest.TestCase):
+    def setup():
+        mcmc_simulator = MCMC_Simulation(simulation_params['compound'],
+                                         simulation_params['trange'],
+                                         simulation_params['properties'],
+                                         simulation_params['number_data_points'],
+                                         simulation_params['steps'])
+        mcmc_simulator.prepare_data()
+        compound_2CLJ = LennardJones_2C(mcmc_simulator.M_w)
+        prior = MCMC_Prior(simulation_params['priors'])
+        prior.make_priors()
+        mcmc_simulator.set_initial_state(prior,compound_2CLJ)
+        mcmc_simulator.trace = [mcmc_simulator.initial_values]
+        mcmc_simulator.logp_trace = [mcmc_simulator.initial_logp]
+        mcmc_simulator.percent_dev_trace = [mcmc_simulator.initial_percent_deviation]
+        mcmc_simulator.move_proposals = 0
+        mcmc_simulator.move_acceptances = 0
+        mcmc_simulator.current_params = mcmc_simulator.trace[0].copy()
+        mcmc_simulator.current_model = int(mcmc_simulator.current_params[0])
+        mcmc_simulator.current_log_prob = mcmc_simulator.logp_trace[0].copy()
+        return mcmc_simulator,compound_2CLJ,prior
+    def test_inputs(self):
+        mcmc_simulator,compound_2CLJ,prior = TestMCMCSteps.setup()
+
+        self.assertRaises(TypeError,mcmc_simulator.MCMC_Steps,prior,'text')
+        self.assertRaises(TypeError,mcmc_simulator.MCMC_Steps,'text',compound_2CLJ)
+    def test_outputs(self):
+        mcmc_simulator,compound_2CLJ,prior = TestMCMCSteps.setup()
+        for i in range(100):
+            move_proposals = copy.deepcopy(mcmc_simulator.move_proposals)
+            move_acceptances = copy.deepcopy(mcmc_simulator.move_acceptances)
+            new_params,new_logp,acceptance = mcmc_simulator.MCMC_Steps(prior,compound_2CLJ)
+            self.assertEqual(move_proposals+1,mcmc_simulator.move_proposals)
+            self.assertIs(bool,type(acceptance))
+            
+            if acceptance is True:
+                self.assertEqual(move_acceptances+1,mcmc_simulator.move_acceptances)
+                self.assertNotEqual(sum(new_params),sum(mcmc_simulator.current_params))
+                self.assertNotEqual(new_logp,mcmc_simulator.current_log_prob)
+                
+            if acceptance is False:
+                self.assertEqual(move_acceptances,mcmc_simulator.move_acceptances)
+                self.assertEqual(new_params.all(),mcmc_simulator.current_params.all())
+                self.assertEqual(new_logp,mcmc_simulator.current_log_prob)
+                        
+class TestTuneRJMC(unittest.TestCase):     
+    def setup():
+        mcmc_simulator = MCMC_Simulation(simulation_params['compound'],
+                                         simulation_params['trange'],
+                                         simulation_params['properties'],
+                                         simulation_params['number_data_points'],
+                                         simulation_params['steps'])
+        mcmc_simulator.prepare_data()
+        compound_2CLJ = LennardJones_2C(mcmc_simulator.M_w)
+        prior = MCMC_Prior(simulation_params['priors'])
+        prior.make_priors()
+        mcmc_simulator.set_initial_state(prior,compound_2CLJ)
+        mcmc_simulator.move_proposals = 0
+        mcmc_simulator.move_acceptances = 0
+        return mcmc_simulator,compound_2CLJ,prior
+
+    def test_tune_down(self):
+        mcmc_simulator,compound_2CLJ,prior = TestTuneRJMC.setup()
+        mcmc_simulator.move_proposals = 10000
+        mcmc_simulator.move_acceptances = 9000
+        prop_sd_orig = copy.deepcopy(mcmc_simulator.prop_sd)
+        mcmc_simulator.Tune_MCMC()
+        self.assertGreater(sum(mcmc_simulator.prop_sd),sum(prop_sd_orig))
+    def test_tune_up(self):
+        mcmc_simulator,compound_2CLJ,prior = TestTuneRJMC.setup()
+        mcmc_simulator.move_proposals = 10000
+        mcmc_simulator.move_acceptances = 1000
+        prop_sd_orig = copy.deepcopy(mcmc_simulator.prop_sd)
+        mcmc_simulator.Tune_MCMC()
+        self.assertLess(sum(mcmc_simulator.prop_sd),sum(prop_sd_orig))
+    def test_errors(self):
+        mcmc_simulator,compound_2CLJ,prior = TestTuneRJMC.setup()
+        mcmc_simulator.move_proposals = 1000
+        mcmc_simulator.move_acceptances = 1001
+        self.assertRaises(ValueError,mcmc_simulator.Tune_MCMC)
+        
+        mcmc_simulator.move_proposals = -1000
+        mcmc_simulator.move_acceptances = -1002
+        self.assertRaises(ValueError,mcmc_simulator.Tune_MCMC)
+        
+        mcmc_simulator.move_proposals = 1000
+        mcmc_simulator.move_acceptances = -100
+        self.assertRaises(ValueError,mcmc_simulator.Tune_MCMC)
         
         
         
+    
         
     
     
