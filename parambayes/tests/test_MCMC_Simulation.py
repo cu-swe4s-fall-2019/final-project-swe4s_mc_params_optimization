@@ -9,6 +9,8 @@ Created on Mon Dec  2 22:40:13 2019
 import unittest
 from parambayes import MCMC_Simulation,MCMC_Prior
 from parambayes.LennardJones_2Center_correlations import LennardJones_2C
+import numpy as np
+import copy
 
 import math
 
@@ -24,7 +26,7 @@ def params():
     # Which properties to simulate ('rhol','rhol+Psat','All')
     simulation_params['trange'] = [0.55, 0.95]
     # Temperature range (fraction of Tc)
-    simulation_params['steps'] = 2000000
+    simulation_params['steps'] = 12000
     # Number of MCMC steps
     simulation_params['number_data_points'] = 10
 
@@ -263,7 +265,86 @@ class TestCalcPosterior(unittest.TestCase):
         mcmc_simulator,compound_2CLJ,prior=TestCalcPosterior.setup()
         chain_values = [70,0.3,math.nan,0.1]
         self.assertWarns(UserWarning,mcmc_simulator.calc_posterior,prior,compound_2CLJ,chain_values)
-    
+        
+class TestSetInitialState(unittest.TestCase):
+    def setup():
+        mcmc_simulator = MCMC_Simulation(simulation_params['compound'],
+            simulation_params['trange'],
+            simulation_params['properties'],
+            simulation_params['number_data_points'],
+            simulation_params['steps'])
+        mcmc_simulator.prepare_data()
+        compound_2CLJ = LennardJones_2C(mcmc_simulator.M_w)
+        prior = MCMC_Prior(simulation_params['priors'])
+        prior.make_priors()
+        return mcmc_simulator,compound_2CLJ,prior
+    def test_inputs(self):
+        mcmc_simulator,compound_2CLJ,prior = TestSetInitialState.setup()
+        self.assertRaises(TypeError,mcmc_simulator.set_initial_state,'text',compound_2CLJ)
+        self.assertRaises(TypeError,mcmc_simulator.set_initial_state,prior,'text')
+        self.assertRaises(TypeError,mcmc_simulator.set_initial_state,prior,compound_2CLJ,initial_position = 'text')
+        self.assertRaises(IndexError,mcmc_simulator.set_initial_state,prior,compound_2CLJ,initial_position = [1,1,1])
+        self.assertRaises(TypeError,mcmc_simulator.set_initial_state,prior,compound_2CLJ,initial_position = [1,1,1,'text'])
+    def test_outputs_sanity(self):
+        mcmc_simulator,compound_2CLJ,prior = TestSetInitialState.setup()
+        mcmc_simulator.set_initial_state(prior,compound_2CLJ)
+        self.assertEqual(mcmc_simulator.n_params,4)
+        self.assertIs(np.float64,type(mcmc_simulator.initial_logp))
+        self.assertIs(np.ndarray,type(mcmc_simulator.initial_values))
+        self.assertIs(tuple,type(mcmc_simulator.initial_percent_deviation))
+        self.assertIs(np.ndarray,type(mcmc_simulator.new_lit_devs))
+    def test_logp_output(self):
+        mcmc_simulator,compound_2CLJ,prior = TestSetInitialState.setup()
+        self.assertRaises(ValueError,mcmc_simulator.set_initial_state,prior,compound_2CLJ,initial_position = [-1,-1,-1,-1])
+class TestMCMCOuterLoop(unittest.TestCase):
+    def setup():
+        mcmc_simulator = MCMC_Simulation(simulation_params['compound'],
+            simulation_params['trange'],
+            simulation_params['properties'],
+            simulation_params['number_data_points'],
+            simulation_params['steps'])
+        mcmc_simulator.prepare_data()
+        compound_2CLJ = LennardJones_2C(mcmc_simulator.M_w)
+        prior = MCMC_Prior(simulation_params['priors'])
+        prior.make_priors()
+        mcmc_simulator.set_initial_state(prior,compound_2CLJ)
+        return mcmc_simulator,compound_2CLJ,prior
 
+class TestAcceptReject(unittest.TestCase):
+    def test_inputs(self):
+        mcmc_simulator = MCMC_Simulation(simulation_params['compound'],
+            simulation_params['trange'],
+            simulation_params['properties'],
+            simulation_params['number_data_points'],
+            simulation_params['steps'])
+        self.assertRaises(TypeError,mcmc_simulator.accept_reject,'text')
+        acceptance = mcmc_simulator.accept_reject(-1.05)
+        self.assertIs(bool,type(acceptance))
+
+class TestParameterProposal(unittest.TestCase):
+    def setup():
+        mcmc_simulator = MCMC_Simulation(simulation_params['compound'],
+            simulation_params['trange'],
+            simulation_params['properties'],
+            simulation_params['number_data_points'],
+            simulation_params['steps'])
+        mcmc_simulator.prepare_data()
+        compound_2CLJ = LennardJones_2C(mcmc_simulator.M_w)
+        prior = MCMC_Prior(simulation_params['priors'])
+        prior.make_priors()
+        mcmc_simulator.set_initial_state(prior,compound_2CLJ)
+        return mcmc_simulator,compound_2CLJ,prior
+    def test_sanity_check(self):
+        mcmc_simulator,compound_2CLJ,prior = TestParameterProposal.setup()
+        params = [1,1,1,1]
+        proposed_params = copy.deepcopy(params)
+        new_params, proposed_log_prob = mcmc_simulator.parameter_proposal(prior,proposed_params,compound_2CLJ)
+        self.assertNotEqual(new_params,params)
+
+#class Test
+        
+        
+        
+        
     
     

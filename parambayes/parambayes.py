@@ -13,6 +13,7 @@ from parambayes.plotting import create_param_triangle_plot_4D, create_percent_de
 from parambayes.utility import rhol_hat_models, Psat_hat_models, SurfTens_hat_models, T_c_hat_models, computePercentDeviations
 from parambayes.LennardJones_2Center_correlations import LennardJones_2C
 from datetime import date, datetime
+from parambayes.LennardJones_2Center_correlations import LennardJones_2C
 import pickle
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -171,13 +172,11 @@ class MCMC_Simulation():
         for value in chain_values:
             if not isinstance(value,(int,float)):
                 raise TypeError('MCMC_Simulation.calc_posterior: chain values must all be floats or integers')       
-
+        if not isinstance(compound_2CLJ,LennardJones_2C):
+            raise TypeError('MCMC_Simulation.calc_posterior: compound_2CLJ must be instance of LennardJones_2C class')
         if not isinstance(mcmc_prior,MCMC_Prior):
             raise TypeError('MCMC_Simulation.calc_posterior: prior must be instance of MCMC_Prior class')
-        if not isinstance(compound_2CLJ, LennardJones_2C):
-            raise TypeError('MCMC_Simulation.calc_posterior: prior must be instance of LennardJones_2C class')
 
-        
         dnorm = distributions.norm.logpdf
 
         logp = 0
@@ -213,51 +212,21 @@ class MCMC_Simulation():
             logp = -1* math.inf
             warnings.warn('Warning: Proposed move returned logp of NaN. Setting logp to -inf')
         return logp
-    
-    def calc_posterior_emcee(self,chain_values,compound_2CLJ,mcmc_prior)    :
-            # def calc_posterior(model,eps,sig,L,Q,biasing_factor_UA=0,biasing_factor_AUA=0,biasing_factor_AUA_Q=0):
-
-        dnorm = distributions.norm.logpdf
-
-        logp = 0
-
-        '''
-        if chain_values[1] or chain_values[2] or chain_values[3] <= 0:
-            #disallow values below 0 as nonphysical
-            #print('Reject negative value')
-            logp = -1*np.inf
-        '''
-
-        logp += mcmc_prior.priors['sigma']['function'].logpdf(chain_values[1], *mcmc_prior.priors['sigma']['values'])
-        logp += mcmc_prior.priors['epsilon']['function'].logpdf(
-            chain_values[0], *mcmc_prior.priors['epsilon']['values'])
-        logp += mcmc_prior.priors['Q']['function'].logpdf(chain_values[3], *mcmc_prior.priors['Q']['values'])
-        logp += mcmc_prior.priors['L']['function'].logpdf(chain_values[2], *mcmc_prior.priors['L']['values'])
-        # Add priors for Q and L for AUA+Q model
-
-        rhol_hat = rhol_hat_models(compound_2CLJ, self.thermo_data_rhoL[:, 0], *chain_values)  # [kg/m3]
-        Psat_hat = Psat_hat_models(compound_2CLJ, self.thermo_data_Pv[:, 0], *chain_values)  # [kPa]
-        SurfTens_hat = SurfTens_hat_models(compound_2CLJ, self.thermo_data_SurfTens[:, 0], *chain_values)
-        # Compute properties at temperatures from experimental data
-
-        # Data likelihood: Compute likelihood based on gaussian penalty function
-        if self.properties == 'rhol':
-            logp += sum(dnorm(self.thermo_data_rhoL[:, 1], rhol_hat, self.t_rhol**-2.))
-            #logp += sum(dnorm(rhol_data,rhol_hat,t_rhol**-2.))
-        elif self.properties == 'Psat':
-            logp += sum(dnorm(self.thermo_data_Pv[:, 1], Psat_hat, self.t_Psat**-2.))
-        elif self.properties == 'rhol+Psat':
-            logp += sum(dnorm(self.thermo_data_rhoL[:, 1], rhol_hat, self.t_rhol**-2.))
-            logp += sum(dnorm(self.thermo_data_Pv[:, 1], Psat_hat, self.t_Psat**-2.))
-        elif self.properties == 'All':
-            logp += sum(dnorm(self.thermo_data_rhoL[:, 1], rhol_hat, self.t_rhol**-2.))
-            logp += sum(dnorm(self.thermo_data_Pv[:, 1], Psat_hat, self.t_Psat**-2.))
-            logp += sum(dnorm(self.thermo_data_SurfTens[:, 1], SurfTens_hat, self.t_SurfTens**-2))
-        if logp is math.nan:
-            logp = -1*math.inf
-        return logp
 
     def set_initial_state(self, mcmc_prior, compound_2CLJ, initial_position=None):
+        if not isinstance(mcmc_prior,MCMC_Prior):
+            raise TypeError('MCMC_Simulation.set_initial_state: prior must be an instance of MCMC_Prior object')
+        if not isinstance(compound_2CLJ,LennardJones_2C):
+            raise TypeError('MCMC_Simulation.set_initial_state: compound_2CLJ must be an instance of LennardJones_2C object')
+        if initial_position is not None:
+            if not isinstance(initial_position,(list,np.ndarray)):
+                raise TypeError('MCMC_Simulation.set_initial_state: User supplied initial position must be list or ndarray')
+            if np.shape(initial_position)[0] != 4:
+                raise IndexError('MCMC_Simulation.set_initial_state: user supplied initial_position must have length 4')
+            for value in initial_position:
+                if not isinstance(value, (float,int)):
+                    raise TypeError('MCMC_Simulation.set_intial_state: user supplied initial position must be list of floats or ints')
+                    
         initial_logp = math.nan
         while math.isnan(initial_logp):
             initial_values = np.empty(4)
@@ -283,6 +252,8 @@ class MCMC_Simulation():
         print('==============================')
         self.initial_values = initial_values
         self.initial_logp = initial_logp
+        if self.initial_logp == -1 * math.inf:
+            raise ValueError('MCMC_Simulation.set_initial_state: initial state has 0 probability.  This is probably due to user-provided values')
         self.initial_percent_deviation = computePercentDeviations(compound_2CLJ,
                                                                   self.thermo_data_rhoL[:, 0],
                                                                   self.thermo_data_Pv[:, 0],
@@ -377,24 +348,26 @@ class MCMC_Simulation():
         alpha = (proposed_log_prob - self.current_log_prob)
 
         acceptance = self.accept_reject(alpha)
-        if acceptance == 'True':
+        if acceptance is True:
             new_log_prob = proposed_log_prob
             new_params = proposed_params
             self.move_acceptances += 1
 
-        elif acceptance == 'False':
+        elif acceptance is False:
             new_log_prob = self.current_log_prob
             new_params = self.current_params
 
         return new_params, new_log_prob, acceptance
 
     def accept_reject(self, alpha):
+        if not isinstance(alpha,(float,np.float)):
+            raise TypeError('MCMC_Simulation.accept_reject: alpha must be float')
         urv = np.random.random()
         # Metropolis-Hastings accept/reject criteria
         if np.log(urv) < alpha:
-            acceptance = 'True'
+            acceptance = True
         else:
-            acceptance = 'False'
+            acceptance = False
         return acceptance
 
     def parameter_proposal(self, prior, proposed_params, compound_2CLJ):
