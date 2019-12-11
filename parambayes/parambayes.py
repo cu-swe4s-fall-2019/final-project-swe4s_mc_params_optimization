@@ -13,7 +13,6 @@ from parambayes.plotting import create_param_triangle_plot_4D, create_percent_de
 from parambayes.utility import rhol_hat_models, Psat_hat_models, SurfTens_hat_models, T_c_hat_models, computePercentDeviations
 from parambayes.LennardJones_2Center_correlations import LennardJones_2C
 from datetime import date, datetime
-from parambayes.LennardJones_2Center_correlations import LennardJones_2C
 import pickle
 import matplotlib.pyplot as plt
 from tqdm import tqdm
@@ -285,6 +284,11 @@ class MCMC_Simulation():
         self.new_lit_devs = np.asarray(self.new_lit_devs)
 
     def MCMC_Outerloop(self, prior, compound_2CLJ):
+         
+        if not isinstance(prior,MCMC_Prior):
+            raise TypeError('MCMC_Simulation.set_initial_state: prior must be an instance of MCMC_Prior object')
+        if not isinstance(compound_2CLJ,LennardJones_2C):
+            raise TypeError('MCMC_Simulation.set_initial_state: compound_2CLJ must be an instance of LennardJones_2C object')
         self.trace = [self.initial_values]
         self.logp_trace = [self.initial_logp]
         self.percent_dev_trace = [self.initial_percent_deviation]
@@ -341,13 +345,24 @@ class MCMC_Simulation():
         print('==============================')
 
     def MCMC_Steps(self, prior, compound_2CLJ):
+        
+        if not isinstance(prior,MCMC_Prior):
+            raise TypeError('MCMC_Simulation.set_initial_state: prior must be an instance of MCMC_Prior object')
+        if not isinstance(compound_2CLJ,LennardJones_2C):
+            raise TypeError('MCMC_Simulation.set_initial_state: compound_2CLJ must be an instance of LennardJones_2C object')
         proposed_params = self.current_params.copy()
 
         proposed_params, proposed_log_prob = self.parameter_proposal(prior, proposed_params, compound_2CLJ)
         self.move_proposals += 1
         alpha = (proposed_log_prob - self.current_log_prob)
+        
+
 
         acceptance = self.accept_reject(alpha)
+        
+        if alpha > 0:
+            assert acceptance == True
+        
         if acceptance is True:
             new_log_prob = proposed_log_prob
             new_params = proposed_params
@@ -382,6 +397,12 @@ class MCMC_Simulation():
 
     def Tune_MCMC(self):
         # print(np.sum(self.move_proposals))
+        if self.move_acceptances > self.move_proposals:
+            raise ValueError('MCMC_Simulation.Tune_MCMC: Somehow more moves accepted then proposed. Counter is likely broken')
+        if self.move_acceptances < 0:
+            raise ValueError('MCMC_Simulation.Tune_MCMC: move_acceptance < 0.  Counter is broken')
+        if self.move_proposals < 0:
+            raise ValueError('MCMC_Simulation.Tune_MCMC: move_proposals < 0. Counter is broken')
         acceptance_rate = np.sum(self.move_acceptances) / np.sum(self.move_proposals)
         # print(acceptance_rate)
         if acceptance_rate < 0.2:
@@ -391,8 +412,16 @@ class MCMC_Simulation():
             self.prop_sd *= 1.1
             # print('No')
 
-    def write_output(self, prior_dict, tag=None, save_traj=False):
+    def write_output(self, prior_dict, tag='', save_traj=False,output_path=False):
 
+        if not isinstance(prior_dict,dict):
+            raise TypeError('MCMC_Simulation.write_output: prior dict must be dictionary of priors (generate with MCMC_Priors)')
+        if tag is not None:
+            if not isinstance(tag,str):
+                raise TypeError('MCMC_Simulation.write_output: tag must be None or str')
+        if not isinstance(save_traj,bool):
+            raise TypeError('MCMC_Simulation.write_output: save_traj must be bool')
+        
         # Ask if output exists
         if os.path.isdir('../output') is False:
             os.mkdir('../output')
@@ -443,10 +472,12 @@ class MCMC_Simulation():
 
         self.write_metadata(path, prior_dict)
 
-        if save_traj:
+        if save_traj is True:
             print('Saving Trajectories')
             print('==============================')
             self.write_traces(path)
+        if output_path is True:
+            return path
 
     def write_datapoints(self, path):
 
@@ -480,6 +511,26 @@ class MCMC_Simulation():
         np.save(path + '/trace/trace.npy', self.trace_tuned)
         np.save(path + '/trace/logp_trace.npy', self.logp_trace_tuned)
         np.save(path + '/trace/percent_dev_trace_tuned.npy', self.percent_dev_trace_tuned)
+    
+    def find_maxima(self,trace):
+        if not isinstance(trace,(np.ndarray,list)):
+            raise TypeError('MCMC_Simulation.find_maxima: trace must be np.ndarray or list')
+        num_bins=20
+        hist=np.histogramdd(trace,bins=num_bins,density=True)
+        val = hist[0].max()
+        for i in range(num_bins):
+            for j in range(num_bins):
+                for k in range(num_bins):
+                    for l in range(num_bins):
+                        if hist[0][i][j][k][l] == val:
+                            key = [i,j,k,l]
+                            break
+        max_values = []
+        for index in range(len(key)):
+            low=hist[1][index][key[index]]
+            high=hist[1][index][key[index]]
+            max_values.append((low+high)/2)
+            self.max_values = max_values
 
 
 class MCMC_Prior():
