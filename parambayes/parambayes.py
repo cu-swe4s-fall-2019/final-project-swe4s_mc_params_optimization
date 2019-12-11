@@ -389,9 +389,8 @@ class MCMC_Simulation():
             self.move_proposals = 0
             self.move_acceptances = 0
 
-            new_params,
-            new_log_prob,
-            acceptance = self.MCMC_Steps(prior, compound_2CLJ)
+            new_params, new_log_prob, acceptance = \
+		 self.MCMC_Steps(prior, compound_2CLJ)
 
             # self.move_proposals[int(self.current_params[0]),
             # int(new_params[0])] += 1
