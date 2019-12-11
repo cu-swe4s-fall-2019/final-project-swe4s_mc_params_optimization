@@ -543,10 +543,10 @@ class MCMC_Simulation():
                           + '/' + self.properties) is False):
             os.mkdir('../output/' + self.compound + '/' + self.properties)
 
-        path = '../output/' + self.compound + '/' +
-        self.properties + '/' + self.compound + \
-            '_' + self.properties + '_' + str(self.steps) +
-        '_' + tag + '_' + str(date.today())
+        path = '../output/' + self.compound + '/' + \
+            self.properties + '/' + self.compound + \
+            '_' + self.properties + '_' + str(self.steps) + \
+            '_' + tag + '_' + str(date.today())
 
         if os.path.isdir(path):
             print('Directory Exists, overwriting')
