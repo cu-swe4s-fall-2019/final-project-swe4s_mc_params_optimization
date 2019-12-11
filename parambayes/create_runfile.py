@@ -144,7 +144,6 @@ def main():
     if bool(args.date):
         today = "_" + str(date.today())
 
-
     if os.path.exists("runfiles") is False:
         os.mkdir("runfiles")
 
@@ -162,4 +161,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -53,11 +53,10 @@ def basic(simulation_params):
         str(simulation_params['steps']) + '_' + simulation_params['label'] + \
         '_' + str(date.today()) + '/runfile.yaml'
 
-    
-    with open(path,'w') as outfile:
-        yaml.dump(simulation_params,outfile,default_flow_style=False)
+    with open(path, 'w') as outfile:
+        yaml.dump(simulation_params, outfile, default_flow_style=False)
     return mcmc_simulator
-    
+
 
 def main():
     parser = argparse.ArgumentParser(description='Find YAML file')
@@ -73,8 +72,7 @@ def main():
     simulation_params = parse_input_yaml(filepath)
     mcmc_simulator = basic(simulation_params)
 
-        
-    print('Finished!')   
+    print('Finished!')
     return mcmc_simulator
 
 
