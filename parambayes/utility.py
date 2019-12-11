@@ -6,6 +6,8 @@ Created on Tue Nov 19 21:44:21 2019
 @author: owenmadin
 """
 import numpy as np
+from parambayes.LennardJones_2Center_correlations import LennardJones_2C
+
 # Create functions that return properties for a given model, eps, sig
 
 
@@ -15,9 +17,13 @@ def rhol_hat_models(compound_2CLJ, Temp, eps, sig, L, Q):
     sig_nm=sig/10
     Q_nm=Q/10
     '''
-
+    if not isinstance(compound_2CLJ, LennardJones_2C):
+        raise TypeError("utility.py: compound_2CLJ must be a LennardJones_2Center_correlation.LennardJones2C object")
+    if all([not isinstance(ins, (float, int, np.float, np.int, np.ndarray)) for ins in [Temp, eps, sig, L, Q]]):
+        raise TypeError("utility.py: Temp, eps, sig, L, and Q must be an int/float/np.int/np.float/np.array!")
     rhol_hat = compound_2CLJ.rhol_hat_2CLJQ(Temp, eps, sig, L, Q)
-
+    if all([isinstance(ins, (int, float, np.int, np.float)) for ins in [Temp, eps, sig, L, Q]]):
+        raise TypeError("utility.py: At least one of Temp, eps, sig, L or Q must be a Numpy array")
     return rhol_hat  # [kg/m3]
 
 
