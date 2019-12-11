@@ -128,10 +128,7 @@ class MCMC_Simulation():
         uncertainty information.
         """
 
-        self.ff_params_ref,
-        self.Tc_lit, self.M_w,
-        thermo_data,
-        self.NIST_bondlength = parse_data_ffs(self.compound)
+        self.ff_params_ref, self.Tc_lit, self.M_w, thermo_data, self.NIST_bondlength = parse_data_ffs(self.compound)
 
         if not isinstance(self.ff_params_ref, np.ndarray):
             raise TypeError('MCMC_Simulation.prepare_data: expected ' +
