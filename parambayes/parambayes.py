@@ -171,13 +171,11 @@ class MCMC_Simulation():
         for value in chain_values:
             if not isinstance(value,(int,float)):
                 raise TypeError('MCMC_Simulation.calc_posterior: chain values must all be floats or integers')       
-
+        if not isinstance(compound_2CLJ,LennardJones_2C):
+            raise TypeError('MCMC_Simulation.calc_posterior: compound_2CLJ must be instance of LennardJones_2C class')
         if not isinstance(mcmc_prior,MCMC_Prior):
             raise TypeError('MCMC_Simulation.calc_posterior: prior must be instance of MCMC_Prior class')
-        if not isinstance(compound_2CLJ, LennardJones_2C):
-            raise TypeError('MCMC_Simulation.calc_posterior: prior must be instance of LennardJones_2C class')
 
-        
         dnorm = distributions.norm.logpdf
 
         logp = 0
@@ -213,51 +211,21 @@ class MCMC_Simulation():
             logp = -1* math.inf
             warnings.warn('Warning: Proposed move returned logp of NaN. Setting logp to -inf')
         return logp
-    
-    def calc_posterior_emcee(self,chain_values,compound_2CLJ,mcmc_prior)    :
-            # def calc_posterior(model,eps,sig,L,Q,biasing_factor_UA=0,biasing_factor_AUA=0,biasing_factor_AUA_Q=0):
-
-        dnorm = distributions.norm.logpdf
-
-        logp = 0
-
-        '''
-        if chain_values[1] or chain_values[2] or chain_values[3] <= 0:
-            #disallow values below 0 as nonphysical
-            #print('Reject negative value')
-            logp = -1*np.inf
-        '''
-
-        logp += mcmc_prior.priors['sigma']['function'].logpdf(chain_values[1], *mcmc_prior.priors['sigma']['values'])
-        logp += mcmc_prior.priors['epsilon']['function'].logpdf(
-            chain_values[0], *mcmc_prior.priors['epsilon']['values'])
-        logp += mcmc_prior.priors['Q']['function'].logpdf(chain_values[3], *mcmc_prior.priors['Q']['values'])
-        logp += mcmc_prior.priors['L']['function'].logpdf(chain_values[2], *mcmc_prior.priors['L']['values'])
-        # Add priors for Q and L for AUA+Q model
-
-        rhol_hat = rhol_hat_models(compound_2CLJ, self.thermo_data_rhoL[:, 0], *chain_values)  # [kg/m3]
-        Psat_hat = Psat_hat_models(compound_2CLJ, self.thermo_data_Pv[:, 0], *chain_values)  # [kPa]
-        SurfTens_hat = SurfTens_hat_models(compound_2CLJ, self.thermo_data_SurfTens[:, 0], *chain_values)
-        # Compute properties at temperatures from experimental data
-
-        # Data likelihood: Compute likelihood based on gaussian penalty function
-        if self.properties == 'rhol':
-            logp += sum(dnorm(self.thermo_data_rhoL[:, 1], rhol_hat, self.t_rhol**-2.))
-            #logp += sum(dnorm(rhol_data,rhol_hat,t_rhol**-2.))
-        elif self.properties == 'Psat':
-            logp += sum(dnorm(self.thermo_data_Pv[:, 1], Psat_hat, self.t_Psat**-2.))
-        elif self.properties == 'rhol+Psat':
-            logp += sum(dnorm(self.thermo_data_rhoL[:, 1], rhol_hat, self.t_rhol**-2.))
-            logp += sum(dnorm(self.thermo_data_Pv[:, 1], Psat_hat, self.t_Psat**-2.))
-        elif self.properties == 'All':
-            logp += sum(dnorm(self.thermo_data_rhoL[:, 1], rhol_hat, self.t_rhol**-2.))
-            logp += sum(dnorm(self.thermo_data_Pv[:, 1], Psat_hat, self.t_Psat**-2.))
-            logp += sum(dnorm(self.thermo_data_SurfTens[:, 1], SurfTens_hat, self.t_SurfTens**-2))
-        if logp is math.nan:
-            logp = -1*math.inf
-        return logp
 
     def set_initial_state(self, mcmc_prior, compound_2CLJ, initial_position=None):
+        if not isinstance(mcmc_prior,MCMC_Prior):
+            raise TypeError('MCMC_Simulation.set_initial_state: prior must be an instance of MCMC_Prior object')
+        if not isinstance(compound_2CLJ,LennardJones_2C):
+            raise TypeError('MCMC_Simulation.set_initial_state: compound_2CLJ must be an instance of LennardJones_2C object')
+        if initial_position is not None:
+            if not isinstance(initial_position,(list,np.ndarray)):
+                raise TypeError('MCMC_Simulation.set_initial_state: User supplied initial position must be list or ndarray')
+            if np.shape(initial_position)[0] != 4:
+                raise IndexError('MCMC_Simulation.set_initial_state: user supplied initial_position must have length 4')
+            for value in initial_position:
+                if not isinstance(value, (float,int)):
+                    raise TypeError('MCMC_Simulation.set_intial_state: user supplied initial position must be list of floats or ints')
+                    
         initial_logp = math.nan
         while math.isnan(initial_logp):
             initial_values = np.empty(4)
@@ -283,6 +251,8 @@ class MCMC_Simulation():
         print('==============================')
         self.initial_values = initial_values
         self.initial_logp = initial_logp
+        if self.initial_logp == -1 * math.inf:
+            raise ValueError('MCMC_Simulation.set_initial_state: initial state has 0 probability.  This is probably due to user-provided values')
         self.initial_percent_deviation = computePercentDeviations(compound_2CLJ,
                                                                   self.thermo_data_rhoL[:, 0],
                                                                   self.thermo_data_Pv[:, 0],
@@ -314,6 +284,11 @@ class MCMC_Simulation():
         self.new_lit_devs = np.asarray(self.new_lit_devs)
 
     def MCMC_Outerloop(self, prior, compound_2CLJ):
+         
+        if not isinstance(prior,MCMC_Prior):
+            raise TypeError('MCMC_Simulation.set_initial_state: prior must be an instance of MCMC_Prior object')
+        if not isinstance(compound_2CLJ,LennardJones_2C):
+            raise TypeError('MCMC_Simulation.set_initial_state: compound_2CLJ must be an instance of LennardJones_2C object')
         self.trace = [self.initial_values]
         self.logp_trace = [self.initial_logp]
         self.percent_dev_trace = [self.initial_percent_deviation]
@@ -370,31 +345,44 @@ class MCMC_Simulation():
         print('==============================')
 
     def MCMC_Steps(self, prior, compound_2CLJ):
+        
+        if not isinstance(prior,MCMC_Prior):
+            raise TypeError('MCMC_Simulation.set_initial_state: prior must be an instance of MCMC_Prior object')
+        if not isinstance(compound_2CLJ,LennardJones_2C):
+            raise TypeError('MCMC_Simulation.set_initial_state: compound_2CLJ must be an instance of LennardJones_2C object')
         proposed_params = self.current_params.copy()
 
         proposed_params, proposed_log_prob = self.parameter_proposal(prior, proposed_params, compound_2CLJ)
         self.move_proposals += 1
         alpha = (proposed_log_prob - self.current_log_prob)
+        
+
 
         acceptance = self.accept_reject(alpha)
-        if acceptance == 'True':
+        
+        if alpha > 0:
+            assert acceptance == True
+        
+        if acceptance is True:
             new_log_prob = proposed_log_prob
             new_params = proposed_params
             self.move_acceptances += 1
 
-        elif acceptance == 'False':
+        elif acceptance is False:
             new_log_prob = self.current_log_prob
             new_params = self.current_params
 
         return new_params, new_log_prob, acceptance
 
     def accept_reject(self, alpha):
+        if not isinstance(alpha,(float,np.float)):
+            raise TypeError('MCMC_Simulation.accept_reject: alpha must be float')
         urv = np.random.random()
         # Metropolis-Hastings accept/reject criteria
         if np.log(urv) < alpha:
-            acceptance = 'True'
+            acceptance = True
         else:
-            acceptance = 'False'
+            acceptance = False
         return acceptance
 
     def parameter_proposal(self, prior, proposed_params, compound_2CLJ):
@@ -409,6 +397,12 @@ class MCMC_Simulation():
 
     def Tune_MCMC(self):
         # print(np.sum(self.move_proposals))
+        if self.move_acceptances > self.move_proposals:
+            raise ValueError('MCMC_Simulation.Tune_MCMC: Somehow more moves accepted then proposed. Counter is likely broken')
+        if self.move_acceptances < 0:
+            raise ValueError('MCMC_Simulation.Tune_MCMC: move_acceptance < 0.  Counter is broken')
+        if self.move_proposals < 0:
+            raise ValueError('MCMC_Simulation.Tune_MCMC: move_proposals < 0. Counter is broken')
         acceptance_rate = np.sum(self.move_acceptances) / np.sum(self.move_proposals)
         # print(acceptance_rate)
         if acceptance_rate < 0.2:
@@ -418,8 +412,16 @@ class MCMC_Simulation():
             self.prop_sd *= 1.1
             # print('No')
 
-    def write_output(self, prior_dict, tag=None, save_traj=False):
+    def write_output(self, prior_dict, tag='', save_traj=False,output_path=False):
 
+        if not isinstance(prior_dict,dict):
+            raise TypeError('MCMC_Simulation.write_output: prior dict must be dictionary of priors (generate with MCMC_Priors)')
+        if tag is not None:
+            if not isinstance(tag,str):
+                raise TypeError('MCMC_Simulation.write_output: tag must be None or str')
+        if not isinstance(save_traj,bool):
+            raise TypeError('MCMC_Simulation.write_output: save_traj must be bool')
+        
         # Ask if output exists
         if os.path.isdir('../output') is False:
             os.mkdir('../output')
@@ -470,10 +472,12 @@ class MCMC_Simulation():
 
         self.write_metadata(path, prior_dict)
 
-        if save_traj:
+        if save_traj is True:
             print('Saving Trajectories')
             print('==============================')
             self.write_traces(path)
+        if output_path is True:
+            return path
 
     def write_datapoints(self, path):
 
@@ -507,6 +511,26 @@ class MCMC_Simulation():
         np.save(path + '/trace/trace.npy', self.trace_tuned)
         np.save(path + '/trace/logp_trace.npy', self.logp_trace_tuned)
         np.save(path + '/trace/percent_dev_trace_tuned.npy', self.percent_dev_trace_tuned)
+    
+    def find_maxima(self,trace):
+        if not isinstance(trace,(np.ndarray,list)):
+            raise TypeError('MCMC_Simulation.find_maxima: trace must be np.ndarray or list')
+        num_bins=20
+        hist=np.histogramdd(trace,bins=num_bins,density=True)
+        val = hist[0].max()
+        for i in range(num_bins):
+            for j in range(num_bins):
+                for k in range(num_bins):
+                    for l in range(num_bins):
+                        if hist[0][i][j][k][l] == val:
+                            key = [i,j,k,l]
+                            break
+        max_values = []
+        for index in range(len(key)):
+            low=hist[1][index][key[index]]
+            high=hist[1][index][key[index]]
+            max_values.append((low+high)/2)
+            self.max_values = max_values
 
 
 class MCMC_Prior():

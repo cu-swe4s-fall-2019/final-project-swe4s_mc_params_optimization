@@ -51,13 +51,13 @@ def create_param_triangle_plot_4D(trace, tracename, lit_values, properties, comp
         for i in range(4):
             for j in range(4):
                 if i != j:
-                    bins = [[min(min(trace[:, j]), min(lit_values[:, j])), max(max(trace[:, j]), max(lit_values[:, j]))], [
-                        min(min(trace[:, i]), min(lit_values[:, i])), max(max(trace[:, i]), max(lit_values[:, i]))]]
+#                    bins = [[min(min(trace[:, j]), min(lit_values[:, j])), max(max(trace[:, j]), max(lit_values[:, j]))], [
+#                        min(min(trace[:, i]), min(lit_values[:, i])), max(max(trace[:, i]), max(lit_values[:, i]))]]
                     if i == 0 and j == 1:
-                        axs[i, j].hist2d(lit_values[:, j], lit_values[:, i],
-                                         bins=50, cmap='cool', label='RJMC Sampling')
-                        axs[i, j].scatter(trace[::4, j], trace[::4, i], color='0.25', marker='o',
-                                          alpha=0.5, facecolors='none', label='Pareto Values')
+                        axs[i, j].hist2d(trace[:, j], trace[:, i], bins=50, cmap='cool',
+                           label='RJMC Sampling')
+                        axs[i, j].scatter(lit_values[::4, j], lit_values[::4, i], color='0.25',
+                                          marker='o', alpha=0.5, facecolors='none', label='Pareto Values')
                     else:
                         axs[i, j].hist2d(trace[:, j], trace[:, i], bins=50, cmap='cool')
                         axs[i, j].scatter(lit_values[::4, j], lit_values[::4, i], color='0.25',
@@ -132,8 +132,8 @@ def create_param_triangle_plot_4D(trace, tracename, lit_values, properties, comp
         handles0, labels0 = axs[0, 0].get_legend_handles_labels()
         #plt.figlegend((label0,label1),('Literature','RJMC Sampling'))
         fig.legend(handles,labels,loc=[0.1,0.4])
-        #plt.savefig(file_loc+tracename+'.png')
-        plt.show()
+        plt.savefig(file_loc+tracename+'.png')
+        #plt.show()
         plt.close()
         
     return
