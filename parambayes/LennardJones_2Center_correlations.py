@@ -109,6 +109,7 @@ class LennardJones_2C():
         T_c_star = self.T_c_star_hat(q, l)
         rho_c_star = self.rho_c_star_hat(q, l)
         tau = T_c_star - T_star  # T_c_star - T_star
+        print(tau)
         if all(tau > 0):
             x = np.ones([len(tau), 4])  # First column all ones
             x[:, 1] = tau**(1. / 3)

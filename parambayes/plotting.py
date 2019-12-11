@@ -9,15 +9,17 @@ Created on Tue Nov 19 22:47:35 2019
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-# ,sig_prior,eps_prior,L_prior,Q_prior):
-def create_param_triangle_plot_4D(trace, tracename, lit_values, properties, compound, n_iter, file_loc=None):
+def create_param_triangle_plot_4D(trace, tracename, lit_values,
+                                  properties, compound, n_iter,
+                                  file_loc=None):
     if np.shape(trace) != (0,):
 
         fig, axs = plt.subplots(4, 4, figsize=(8, 8))
-        fig.suptitle('Parameter Marginal Distributions, ' + compound + ', ' + properties, fontsize=20)
+        fig.suptitle('Parameter Marginal Distributions, ' +
+                     compound + ', ' + properties, fontsize=20)
 
-        axs[0, 0].hist(trace[:, 0], bins=50, color='m', density=True, label='RJMC Sampling')
+        axs[0, 0].hist(trace[:, 0], bins=50, color='m', density=True,
+                       label='RJMC Sampling')
         axs[1, 1].hist(trace[:, 1], bins=50, color='m', density=True)
         axs[2, 2].hist(trace[:, 2], bins=50, color='m', density=True)
         axs[3, 3].hist(trace[:, 3], bins=50, color='m', density=True)
@@ -26,15 +28,23 @@ def create_param_triangle_plot_4D(trace, tracename, lit_values, properties, comp
             for j in range(4):
                 if i != j:
                     if i == 0 and j == 1:
-                        axs[i, j].hist2d(trace[:, j], trace[:, i], bins=50, cmap='cool',
-                           label='RJMC Sampling')
-                        axs[i, j].scatter(lit_values[::4, j], lit_values[::4, i], color='0.25',
-                                          marker='o', alpha=0.5, facecolors='none', label='Pareto Values')
+                        axs[i, j].hist2d(trace[:, j], trace[:, i],
+                                         bins=50, cmap='cool',
+                                         label='RJMC Sampling')
+                        axs[i, j].scatter(lit_values[::4, j],
+                                          lit_values[::4, i],
+                                          color='0.25',
+                                          marker='o', alpha=0.5,
+                                          facecolors='none',
+                                          label='Pareto Values')
                     else:
-                        axs[i, j].hist2d(trace[:, j], trace[:, i], bins=50, cmap='cool')
-                        axs[i, j].scatter(lit_values[::4, j], lit_values[::4, i], color='0.25',
-                                          marker='o', alpha=0.5, facecolors='none')
-
+                        axs[i, j].hist2d(trace[:, j], trace[:, i],
+                                         bins=50, cmap='cool')
+                        axs[i, j].scatter(lit_values[::4, j],
+                                          lit_values[::4, i],
+                                          color='0.25',
+                                          marker='o', alpha=0.5,
+                                          facecolors='none')
 
         fig.delaxes(axs[1, 0])
         fig.delaxes(axs[2, 0])
@@ -80,16 +90,17 @@ def create_param_triangle_plot_4D(trace, tracename, lit_values, properties, comp
 
         handles, labels = axs[0, 1].get_legend_handles_labels()
         handles0, labels0 = axs[0, 0].get_legend_handles_labels()
-        #plt.figlegend((label0,label1),('Literature','RJMC Sampling'))
-        fig.legend(handles,labels,loc=[0.1,0.4])
-        plt.savefig(file_loc+tracename+'.png')
-        #plt.show()
+        # plt.figlegend((label0,label1),('Literature','RJMC Sampling'))
+        fig.legend(handles, labels, loc=[0.1, 0.4])
+        plt.savefig(file_loc + tracename + '.png')
+        # plt.show()
         plt.close()
-        
+
     return
 
-
-def create_percent_dev_triangle_plot(trace, tracename, lit_values, properties, compound, n_iter, file_loc=None):
+def create_percent_dev_triangle_plot(trace, tracename, lit_values,
+                                     properties, compound,
+                                     n_iter, file_loc=None):
     fig, axs = plt.subplots(4, 4, figsize=(8, 8))
     fig.suptitle('Percent Deviation Marginal Distributions, ' + compound +
                  ', ' + properties + ', ' + str(n_iter) + ' steps')
@@ -105,16 +116,21 @@ def create_percent_dev_triangle_plot(trace, tracename, lit_values, properties, c
     axs[1, 3].hist2d(trace[:, 3], trace[:, 1], bins=100, cmap='cool')
     axs[2, 3].hist2d(trace[:, 3], trace[:, 2], bins=100, cmap='cool')
 
-    axs[0, 1].scatter(lit_values[::4, 1], lit_values[::4, 0], color='0.25', marker='o',
-                      alpha=0.5, facecolors='none', label='Pareto Values')
-    axs[0, 2].scatter(lit_values[::4, 2], lit_values[::4, 0], color='0.25', marker='o', alpha=0.5, facecolors='none')
-    axs[0, 3].scatter(lit_values[::4, 3], lit_values[::4, 0], color='0.25', marker='o', alpha=0.5, facecolors='none')
-    axs[1, 2].scatter(lit_values[::4, 2], lit_values[::4, 1], color='0.25', marker='o', alpha=0.5, facecolors='none')
-    axs[1, 3].scatter(lit_values[::4, 3], lit_values[::4, 1], color='0.25', marker='o', alpha=0.5, facecolors='none')
-    axs[2, 3].scatter(lit_values[::4, 3], lit_values[::4, 2], color='0.25', marker='o', alpha=0.5, facecolors='none')
+    axs[0, 1].scatter(lit_values[::4, 1], lit_values[::4, 0],
+                      color='0.25', marker='o',
+                      alpha=0.5, facecolors='none',
+                      label='Stobener Pareto Values')
+    axs[0, 2].scatter(lit_values[::4, 2], lit_values[::4, 0],
+                      color='0.25', marker='o', alpha=0.5, facecolors='none')
+    axs[0, 3].scatter(lit_values[::4, 3], lit_values[::4, 0],
+                      color='0.25', marker='o', alpha=0.5, facecolors='none')
+    axs[1, 2].scatter(lit_values[::4, 2], lit_values[::4, 1],
+                      color='0.25', marker='o', alpha=0.5, facecolors='none')
+    axs[1, 3].scatter(lit_values[::4, 3], lit_values[::4, 1],
+                      color='0.25', marker='o', alpha=0.5, facecolors='none')
+    axs[2, 3].scatter(lit_values[::4, 3], lit_values[::4, 2],
+                      color='0.25', marker='o', alpha=0.5, facecolors='none')
 
-    # axs[0,1].set_xlim([min(lit_values[::4,1]),max(lit_values[::4,1])])
-    # axs[0,1].set_ylim([min(lit_values[::4,0]),max(lit_values[::4,0])])
 
     fig.delaxes(axs[1, 0])
     fig.delaxes(axs[2, 0])
