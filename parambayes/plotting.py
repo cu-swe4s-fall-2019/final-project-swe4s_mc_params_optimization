@@ -51,8 +51,8 @@ def create_param_triangle_plot_4D(trace, tracename, lit_values, properties, comp
         for i in range(4):
             for j in range(4):
                 if i != j:
-                    bins = [[min(min(trace[:, j]), min(lit_values[:, j])), max(max(trace[:, j]), max(lit_values[:, j]))], [
-                        min(min(trace[:, i]), min(lit_values[:, i])), max(max(trace[:, i]), max(lit_values[:, i]))]]
+#                    bins = [[min(min(trace[:, j]), min(lit_values[:, j])), max(max(trace[:, j]), max(lit_values[:, j]))], [
+#                        min(min(trace[:, i]), min(lit_values[:, i])), max(max(trace[:, i]), max(lit_values[:, i]))]]
                     if i == 0 and j == 1:
                         axs[i, j].hist2d(trace[:, j], trace[:, i], bins=50, cmap='cool',
                            label='RJMC Sampling')

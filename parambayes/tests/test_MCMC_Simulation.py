@@ -11,8 +11,9 @@ from parambayes import MCMC_Simulation,MCMC_Prior
 from parambayes.LennardJones_2Center_correlations import LennardJones_2C
 import numpy as np
 import copy
-
+import os
 import math
+import shutil
 
 
 
@@ -446,10 +447,67 @@ class TestTuneRJMC(unittest.TestCase):
         mcmc_simulator.move_proposals = 1000
         mcmc_simulator.move_acceptances = -100
         self.assertRaises(ValueError,mcmc_simulator.Tune_MCMC)
-        
-        
-        
     
+class TestWriteOutput(unittest.TestCase):
+    def setup():
+        mcmc_simulator = MCMC_Simulation(simulation_params['compound'],
+                                         simulation_params['trange'],
+                                         simulation_params['properties'],
+                                         simulation_params['number_data_points'],
+                                         simulation_params['steps'])
+        mcmc_simulator.prepare_data()
+        compound_2CLJ = LennardJones_2C(mcmc_simulator.M_w)
+        prior = MCMC_Prior(simulation_params['priors'])
+        prior.make_priors()
+        mcmc_simulator.set_initial_state(prior,compound_2CLJ)
+        mcmc_simulator.MCMC_Outerloop(prior,compound_2CLJ)  
+        return mcmc_simulator,prior,compound_2CLJ
+    
+    def test_bad_input(self):
+        mcmc_simulator,prior,compound_2CLJ = TestWriteOutput.setup()
+        self.assertRaises(TypeError,mcmc_simulator.write_output,'wrong_prior')
+        self.assertRaises(TypeError,mcmc_simulator.write_output,simulation_params['priors'],tag=1)
+        self.assertRaises(TypeError,mcmc_simulator.write_output,simulation_params['priors'],save_traj='int')
+    
+    def test_output_created(self):
+        mcmc_simulator,prior,compound_2CLJ = TestWriteOutput.setup()
+        path = mcmc_simulator.write_output(simulation_params['priors'],output_path = True,save_traj = True)
+        self.assertTrue(os.path.isdir(path))
+        self.assertTrue(os.path.isdir(path+'/figures'))
+        self.assertTrue(os.path.isfile(path+'/figures/logp_trace.png'))
+        self.assertTrue(os.path.isfile(path+'/figures/triangle_plot_params.png'))
+        self.assertTrue(os.path.isfile(path+'/figures/triangle_plot_percent_dev_trace.png'))
+        self.assertTrue(os.path.isfile(path+'/datapoints.pkl'))
+        self.assertTrue(os.path.isfile(path+'/metadata.pkl'))
+        self.assertTrue(os.path.isdir(path+'/trace'))
+        self.assertTrue(os.path.isfile(path+'/trace/trace.npy'))        
+        self.assertTrue(os.path.isfile(path+'/trace/logp_trace.npy'))    
+        self.assertTrue(os.path.isfile(path+'/trace/percent_dev_trace_tuned.npy'))
+        shutil.rmtree(path)
+
+class TestFindMaxima(unittest.TestCase):
+    def setup():
+        mcmc_simulator = MCMC_Simulation(simulation_params['compound'],
+                                         simulation_params['trange'],
+                                         simulation_params['properties'],
+                                         simulation_params['number_data_points'],
+                                         simulation_params['steps'])
+        mcmc_simulator.prepare_data()
+        compound_2CLJ = LennardJones_2C(mcmc_simulator.M_w)
+        prior = MCMC_Prior(simulation_params['priors'])
+        prior.make_priors()
+        mcmc_simulator.set_initial_state(prior,compound_2CLJ)
+        mcmc_simulator.MCMC_Outerloop(prior,compound_2CLJ)  
+        return mcmc_simulator,prior,compound_2CLJ
+    
+    def test_input(self):
+        mcmc_simulator,prior,compound_2CLJ = TestFindMaxima.setup()
+        self.assertRaises(TypeError,mcmc_simulator.find_maxima,'not_array')
+    def test_return_values(self):
+        mcmc_simulator,prior,compound_2CLJ = TestFindMaxima.setup()
+        mcmc_simulator.find_maxima(mcmc_simulator.trace)
+        self.assertIsNotNone(mcmc_simulator.max_values)
+        
         
     
     
