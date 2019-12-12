@@ -13,11 +13,12 @@ from parambayes import MCMC_Simulation, MCMC_Prior
 import argparse
 import os
 
+
 def parse_input_yaml(filepath):
     if os.path.isfile(filepath) is False:
         raise FileNotFoundError('mcmc_run_yaml.parse_input_yaml: the yaml' +
                                 'file you are calling does not exist')
-                                
+
     print('Loading simulation params from ' + filepath + '...')
     with open(filepath) as yfile:
         simulation_params = yaml.load(yfile)  # ,Loader=yaml.FullLoader)
