@@ -44,6 +44,8 @@ install:
 script:
   - pytest -v --cov=parambayes parambayes/tests/*.py
   - bash parambayes/tests/*.sh
+  - pycodestyle parambayes/*.py
+  - pycodestyle parambayes/tests/*.py
 
 notifications:
     email: false

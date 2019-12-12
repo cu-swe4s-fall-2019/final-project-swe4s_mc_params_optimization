@@ -92,6 +92,7 @@ def T_c_hat_models(compound_2CLJ, eps, sig, L, Q):
     L_nm=L/10
     sig_nm=sig/10
     Q_nm=Q/10
+
     '''
     if not isinstance(compound_2CLJ, LennardJones_2C):
         raise TypeError(

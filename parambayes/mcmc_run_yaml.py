@@ -11,9 +11,14 @@ from parambayes.LennardJones_2Center_correlations import LennardJones_2C
 from datetime import date
 from parambayes import MCMC_Simulation, MCMC_Prior
 import argparse
+import os
 
 
 def parse_input_yaml(filepath):
+    if os.path.isfile(filepath) is False:
+        raise FileNotFoundError('mcmc_run_yaml.parse_input_yaml: the yaml' +
+                                'file you are calling does not exist')
+
     print('Loading simulation params from ' + filepath + '...')
     with open(filepath) as yfile:
         simulation_params = yaml.load(yfile)  # ,Loader=yaml.FullLoader)
@@ -40,7 +45,8 @@ def basic(simulation_params):
     mcmc_simulator.set_initial_state(mcmc_prior, compound_2CLJ)
 
     mcmc_simulator.MCMC_Outerloop(mcmc_prior, compound_2CLJ)
-
+    mcmc_simulator.find_maxima(mcmc_simulator.trace_tuned)
+    print(mcmc_simulator.max_values)
     mcmc_simulator.write_output(
         simulation_params['priors'],
         tag=simulation_params['label'],
