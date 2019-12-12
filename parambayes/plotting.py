@@ -9,6 +9,7 @@ Created on Tue Nov 19 22:47:35 2019
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def create_param_triangle_plot_4D(trace, tracename, lit_values,
                                   properties, compound, n_iter,
                                   file_loc=None):
@@ -53,7 +54,6 @@ def create_param_triangle_plot_4D(trace, tracename, lit_values,
         fig.delaxes(axs[3, 1])
         fig.delaxes(axs[3, 2])
 
- 
         axs[0, 1].axes.get_yaxis().set_visible(False)
         axs[0, 2].axes.get_yaxis().set_visible(False)
         axs[1, 2].axes.get_yaxis().set_visible(False)
@@ -98,6 +98,7 @@ def create_param_triangle_plot_4D(trace, tracename, lit_values,
 
     return
 
+
 def create_percent_dev_triangle_plot(trace, tracename, lit_values,
                                      properties, compound,
                                      n_iter, file_loc=None):
@@ -130,7 +131,6 @@ def create_percent_dev_triangle_plot(trace, tracename, lit_values,
                       color='0.25', marker='o', alpha=0.5, facecolors='none')
     axs[2, 3].scatter(lit_values[::4, 3], lit_values[::4, 2],
                       color='0.25', marker='o', alpha=0.5, facecolors='none')
-
 
     fig.delaxes(axs[1, 0])
     fig.delaxes(axs[2, 0])
