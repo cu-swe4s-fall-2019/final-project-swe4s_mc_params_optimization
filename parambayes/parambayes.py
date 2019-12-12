@@ -582,6 +582,15 @@ class MCMC_Simulation():
         self.write_datapoints(path)
 
         self.write_metadata(path, prior_dict)
+        
+
+        if self.max_values is not None:    
+            np.savetxt(path+'/max_values.csv', (self.max_values,
+                                                self.max_percent_dev,
+                                                self.ff_params_ref[0],
+                                                self.ff_percent_dev),
+                                                delimiter=',')
+        
 
         if save_traj is True:
             print('Saving Trajectories')
@@ -635,7 +644,7 @@ class MCMC_Simulation():
         np.save(path + '/trace/percent_dev_trace_tuned.npy',
                 self.percent_dev_trace_tuned)
 
-    def find_maxima(self, trace):
+    def find_maxima(self, trace, compound_2CLJ):
         if not isinstance(trace, (np.ndarray, list)):
             raise TypeError('MCMC_Simulation.find_maxima: ' +
                             'trace must be np.ndarray or list')
@@ -654,7 +663,37 @@ class MCMC_Simulation():
             low = hist[1][index][key[index]]
             high = hist[1][index][key[index]]
             max_values.append((low + high) / 2)
-            self.max_values = max_values
+        self.max_values = max_values
+        self.max_percent_dev = computePercentDeviations(
+            compound_2CLJ,
+            self.thermo_data_rhoL[:, 0],
+            self.thermo_data_Pv[:, 0],
+            self.thermo_data_SurfTens[:, 0],
+            self.max_values,
+            self.thermo_data_rhoL[:, 1],
+            self.thermo_data_Pv[:, 1],
+            self.thermo_data_SurfTens[:, 1],
+            self.Tc_lit[0],
+            rhol_hat_models,
+            Psat_hat_models,
+            SurfTens_hat_models,
+            T_c_hat_models)
+        self.ff_percent_dev = computePercentDeviations(
+            compound_2CLJ,
+            self.thermo_data_rhoL[:, 0],
+            self.thermo_data_Pv[:, 0],
+            self.thermo_data_SurfTens[:, 0],
+            self.ff_params_ref[0],
+            self.thermo_data_rhoL[:, 1],
+            self.thermo_data_Pv[:, 1],
+            self.thermo_data_SurfTens[:, 1],
+            self.Tc_lit[0],
+            rhol_hat_models,
+            Psat_hat_models,
+            SurfTens_hat_models,
+            T_c_hat_models)
+        
+            
 
 
 class MCMC_Prior():
