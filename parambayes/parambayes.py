@@ -111,6 +111,7 @@ class MCMC_Simulation():
         self.steps = steps
         self.tune_for = tune_for
         self.tune_freq = tune_freq
+        self.max_values = []
 
     def get_attributes(self):
         """Return attributes of MCMC system

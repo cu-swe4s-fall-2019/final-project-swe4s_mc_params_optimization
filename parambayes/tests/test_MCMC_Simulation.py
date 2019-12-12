@@ -454,13 +454,15 @@ class TestWriteOutput(unittest.TestCase):
                                          simulation_params['trange'],
                                          simulation_params['properties'],
                                          simulation_params['number_data_points'],
-                                         simulation_params['steps'])
+                                         simulation_params['steps'],
+                                         tune_for=100,
+                                         tune_freq=50)
         mcmc_simulator.prepare_data()
         compound_2CLJ = LennardJones_2C(mcmc_simulator.M_w)
         prior = MCMC_Prior(simulation_params['priors'])
         prior.make_priors()
         mcmc_simulator.set_initial_state(prior,compound_2CLJ)
-        mcmc_simulator.MCMC_Outerloop(prior,compound_2CLJ)  
+        mcmc_simulator.MCMC_Outerloop(prior,compound_2CLJ)
         return mcmc_simulator,prior,compound_2CLJ
     
     def test_bad_input(self):
@@ -471,6 +473,8 @@ class TestWriteOutput(unittest.TestCase):
     
     def test_output_created(self):
         mcmc_simulator,prior,compound_2CLJ = TestWriteOutput.setup()
+        print(mcmc_simulator.trace_tuned[0])
+        mcmc_simulator.find_maxima(mcmc_simulator.trace_tuned,compound_2CLJ)
         path = mcmc_simulator.write_output(simulation_params['priors'],output_path = True,save_traj = True)
         self.assertTrue(os.path.isdir(path))
         self.assertTrue(os.path.isdir(path+'/figures'))
@@ -502,10 +506,10 @@ class TestFindMaxima(unittest.TestCase):
     
     def test_input(self):
         mcmc_simulator,prior,compound_2CLJ = TestFindMaxima.setup()
-        self.assertRaises(TypeError,mcmc_simulator.find_maxima,'not_array')
+        self.assertRaises(TypeError,mcmc_simulator.find_maxima,'not_array',compound_2CLJ)
     def test_return_values(self):
         mcmc_simulator,prior,compound_2CLJ = TestFindMaxima.setup()
-        mcmc_simulator.find_maxima(mcmc_simulator.trace)
+        mcmc_simulator.find_maxima(mcmc_simulator.trace,compound_2CLJ)
         self.assertIsNotNone(mcmc_simulator.max_values)
         
         
