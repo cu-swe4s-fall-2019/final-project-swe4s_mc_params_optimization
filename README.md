@@ -62,7 +62,7 @@ The .yaml runfile format allows for fast and easy input parameter modification. 
 ### Force fields
 Molecular Dynamics (the atomistic-level simulation of molecules) has been used to study the behavior of fluids, proteins, drug binding, and other phenomena since the late 1970's.  Crucial to molecular dynamics are *force fields*, which are energy functions that encode the physical interactions of atoms into simple physical forms.  Within a specific functional form, force fields are parameterized (i.e. constants are chosen for particular chemical species so that the potential matches reality).  Force fields are generally broken into two components: 
 
-![Nonbond](figures/nonbond.png)
+![Nonbond](output/figures/nonbond.png)
 
 While bonded interactions are typically fit to quantum mechanical simulations like DFT, non-bonded interactions have a less obvious connection to data and are generally fit to physical property data, making their parameterization a more difficult problem.
 
@@ -74,7 +74,7 @@ An attractive paradigm for parameterizing non-bonded interactions is Bayesian pa
 
 Part of the issue with Bayesian Inference is that, due to the likelihood functions that are chose, posterior distributions are often non-analytical and non-trivial to compute.  In this case, we turn to Markov Chain Monte Carlo sampling to estimate the posterior distribution.  By proposing random moves and accepting/rejecting them with a certain criteria, we draw samples from the posterior distribution. In the Bayesian paradigm (and with a careful choice of move proposals) this criteria turns out to be:
 
-![metropolis](figures/metropolis/png)
+![metropolis](output/figures/metropolis.png)
 
 Collecting enough of these samples gives a reasonable approximation of the posterior distribution.
 
@@ -87,7 +87,7 @@ The 2 center Lennard-Jones + Quadrupole (2CLJQ) model is chosen for this investi
 2. Analytical correlations for physical properties (liquid density, saturation pressure, surface tension) are available from Stoll and Werth, so no actual simulation is required to evaluate these properties as a function of many parameter sets.
 3.  A previous optimzation study for this set of fluids was done by Stobener, which provides a convenient benchmark for our Bayesian approach.
 
-![2CLJQ](figures/2CLJQ.png)
+![2CLJQ](output/figures/2CLJQ.png)
 
 ### Experimental Data
 
@@ -125,132 +125,147 @@ These are compared to:
 
 For the 2-criteria case:
 
-![2_criteria_devs](figures/results/2_criteria_devs.png)
+![2_criteria_devs](output/figures/results/2_criteria_devs.png)
 
 For the 3 criteria case:
 
-![3_criteria_devs](figures/results/3_criteria_devs.png)
+![3_criteria_devs](output/figures/results/3_criteria_devs.png)
+
+In tabular form:
+
+![2_criteria_table](output/figures/results/2_criteria_table.png)
+
+![3_criteria_table](output/figures/results/3_criteria_table.png)
 
 For the most part, the Parambayes MAP (PM) parameter sets end up doing worse than the Stobener Pareto (SP) set, but the Parambayes Pareto (PP) set does slightly better.  This indicates that there is influence from the prior that is shifting the posterior distributions away from the desired values.  This could be mitigated by using a more informed prior, perhaps by fitting a gamma or normal distribution to a shorter MCMC run.
 
 ### Individual Molecules/Cases
 
 ### O2 rhol+Psat
-![O2_rhol+Psat_params](figures/results/O2_rhol+Psat_triangle_plot_params.png)
+![O2_rhol+Psat_params](output/figures/results/O2_rhol+Psat_triangle_plot_params.png)
 
-![O2_rhol+Psat_devs](figures/results/O2_rhol+Psat_triangle_plot_percent_dev_trace.png)
+![O2_rhol+Psat_devs](output/figures/results/O2_rhol+Psat_triangle_plot_percent_dev_trace.png)
 
 The PP param set is an improvement over the SP param set, while the PM set is slightly worse.
 
 ### O2 All
-![O2_All_params](figures/results/O2_All_triangle_plot_params.png)
+![O2_All_params](output/figures/results/O2_All_triangle_plot_params.png)
 
-![O2_All_devs](figures/results/O2_All_triangle_plot_percent_dev_trace.png)
+![O2_All_devs](output/figures/results/O2_All_triangle_plot_percent_dev_trace.png)
 
 
 While both Parambayes sets are slightly worse than the SP, the Pareto set is comparable.
 
 
 ### N2 rhol+Psat
-![N2_rhol+Psat_params](figures/results/N2_rhol+Psat_triangle_plot_params.png)
+![N2_rhol+Psat_params](output/figures/results/N2_rhol+Psat_triangle_plot_params.png)
 
-![N2_rhol+Psat_devs](figures/results/N2_rhol+Psat_triangle_plot_percent_dev_trace.png)
+![N2_rhol+Psat_devs](output/figures/results/N2_rhol+Psat_triangle_plot_percent_dev_trace.png)
 
 
 The PP param set is an improvement over the SP param set, while the PM set is slightly worse.
 
 ### N2 All
-![N2_All_params](figures/results/N2_All_triangle_plot_params.png)
+![N2_All_params](output/figures/results/N2_All_triangle_plot_params.png)
 
-![N2_All_devs](figures/results/N2_All_triangle_plot_percent_dev_trace.png)
+![N2_All_devs](output/figures/results/N2_All_triangle_plot_percent_dev_trace.png)
 
 The PP param set is an improvement over the SP param set, while the PM set is slightly worse. However, all are pretty similar. Parambayes prioritizes lower deviations in the surface tension.
 
 
 ### Br2 rhol+Psat
-![Br2_rhol+Psat_params](figures/results/Br2_rhol+Psat_triangle_plot_params.png)
+![Br2_rhol+Psat_params](output/figures/results/Br2_rhol+Psat_triangle_plot_params.png)
 
-![Br2_rhol+Psat_devs](figures/results/Br2_rhol+Psat_triangle_plot_percent_dev_trace.png)
+![Br2_rhol+Psat_devs](output/figures/results/Br2_rhol+Psat_triangle_plot_percent_dev_trace.png)
 
 
 The PP param set is an improvement over the SP param set, while the PM set is slightly worse.
 
 ### Br2 All
-![Br2_All_params](figures/results/Br2_All_triangle_plot_params.png)
+![Br2_All_params](output/figures/results/Br2_All_triangle_plot_params.png)
 
-![Br2_All_devs](figures/results/Br2_All_triangle_plot_percent_dev_trace.png)
+![Br2_All_devs](output/figures/results/Br2_All_triangle_plot_percent_dev_trace.png)
 
 
 Both Parambayes sets are worse than the SP.  Parambayes prioritizes lower deviations in surface tension, to its detriment.
 
 ### F2 rhol+Psat
-![F2_rhol+Psat_params](figures/results/F2_rhol+Psat_triangle_plot_params.png)
+![F2_rhol+Psat_params](output/figures/results/F2_rhol+Psat_triangle_plot_params.png)
 
-![F2_rhol+Psat_devs](figures/results/F2_rhol+Psat_triangle_plot_percent_dev_trace.png)
+![F2_rhol+Psat_devs](output/figures/results/F2_rhol+Psat_triangle_plot_percent_dev_trace.png)
 
 
 The PP param set is an improvement over the SP param set, while the PM set is slightly worse.
 
 ### F2 All
-![F2_All_params](figures/results/F2_All_triangle_plot_params.png)
+![F2_All_params](output/figures/results/F2_All_triangle_plot_params.png)
 
-![F2_All_devs](figures/results/F2_All_triangle_plot_percent_dev_trace.png)
+![F2_All_devs](output/figures/results/F2_All_triangle_plot_percent_dev_trace.png)
 
 The PP param set is a significant improvement over the SP param set, whereas the PM set is significantly worse.
 
 ### C2H2 rhol+Psat
-![C2H2_rhol+Psat_params](figures/results/C2H2_rhol+Psat_triangle_plot_params.png)
+![C2H2_rhol+Psat_params](output/figures/results/C2H2_rhol+Psat_triangle_plot_params.png)
 
-![C2H2_rhol+Psat_devs](figures/results/C2H2_rhol+Psat_triangle_plot_percent_dev_trace.png)
+![C2H2_rhol+Psat_devs](output/figures/results/C2H2_rhol+Psat_triangle_plot_percent_dev_trace.png)
 
 
 The PP param set is an improvement over the SP param set, while the PM set is slightly worse.
 
 ### C2H2 All
-![C2H2_All_params](figures/results/C2H2_All_triangle_plot_params.png)
+![C2H2_All_params](output/figures/results/C2H2_All_triangle_plot_params.png)
 
-![C2H2_All_devs](figures/results/C2H2_All_triangle_plot_percent_dev_trace.png)
+![C2H2_All_devs](output/figures/results/C2H2_All_triangle_plot_percent_dev_trace.png)
 
 Both the PP and PM param sets are an improvement over the SP set.
 
 ### C2H4 rhol+Psat
-![C2H4_rhol+Psat_params](figures/results/C2H4_rhol+Psat_triangle_plot_params.png)
+![C2H4_rhol+Psat_params](output/figures/results/C2H4_rhol+Psat_triangle_plot_params.png)
 
-![C2H4_rhol+Psat_devs](figures/results/C2H4_rhol+Psat_triangle_plot_percent_dev_trace.png)
+![C2H4_rhol+Psat_devs](output/figures/results/C2H4_rhol+Psat_triangle_plot_percent_dev_trace.png)
 
 
 The PP param set is an improvement over the SP param set, while the PM set essentially the same.
 
 ### C2H4 All
-![C2H4_All_params](figures/results/C2H4_All_triangle_plot_params.png)
+![C2H4_All_params](output/figures/results/C2H4_All_triangle_plot_params.png)
 
-![C2H4_All_devs](figures/results/C2H4_All_triangle_plot_percent_dev_trace.png)
+![C2H4_All_devs](output/figures/results/C2H4_All_triangle_plot_percent_dev_trace.png)
 
 
 While both Parambayes sets are slightly worse than the SP, the Pareto set is comparable.
 
 ### C2H6 rhol+Psat
-![C2H6_rhol+Psat_params](figures/results/C2H6_rhol+Psat_triangle_plot_params.png)
+![C2H6_rhol+Psat_params](output/figures/results/C2H6_rhol+Psat_triangle_plot_params.png)
 
-![C2H6_rhol+Psat_devs](figures/results/C2H6_rhol+Psat_triangle_plot_percent_dev_trace.png)
+![C2H6_rhol+Psat_devs](output/figures/results/C2H6_rhol+Psat_triangle_plot_percent_dev_trace.png)
 
 
 Both the PP and PM param sets are better than the SP set.
 
 ### C2H6 All
-![C2H6_All_params](figures/results/C2H6_All_triangle_plot_params.png)
+![C2H6_All_params](output/figures/results/C2H6_All_triangle_plot_params.png)
 
-![C2H6_All_devs](figures/results/C2H6_All_triangle_plot_percent_dev_trace.png)
+![C2H6_All_devs](output/figures/results/C2H6_All_triangle_plot_percent_dev_trace.png)
 
 Both Parambayes sets are worse than the SP.  Parambayes prioritizes lower deviations in density.
 
 ### C2F4 rhol+Psat
-![C2F4_rhol+Psat_params](figures/results/C2F4_rhol+Psat_triangle_plot_params.png)
+![C2F4_rhol+Psat_params](output/figures/results/C2F4_rhol+Psat_triangle_plot_params.png)
 
-![C2F4_rhol+Psat_devs](figures/results/C2F4_rhol+Psat_triangle_plot_percent_dev_trace.png)
+![C2F4_rhol+Psat_devs](output/figures/results/C2F4_rhol+Psat_triangle_plot_percent_dev_trace.png)
 
 
 The PP param set is an improvement over the SP param set, while the PM set is slightly worse.
+
+
+### Advantages of Bayesian parameter sampling
+
+In addition to providing us with parameter sets, we get additional information about the dependence of the model performance on the parameters. For example, in essentially all cases, we see that the parameters sigma, epsilon, and L are highly correlated.  This indicates that they should be co-optimized in the future.  We also see that in many cases, the Q (Quadrupole parameter) is driven towards zero, while in a few cases, we see that the quadrupole is definitively non-zero.  This indicates that the quadrupole parameter is not useful in some cases, but is essential in others.
+
+## Reproducibility
+
+In order to reproduce these MCMC simulations and outputs, after installing the package, run the script `gen_basic_runfiles.sh`.  It will produce the necessary runfiles for all the simulations done here, and then immediately run them.
 
 ### Copyright
 
