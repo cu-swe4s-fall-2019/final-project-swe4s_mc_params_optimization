@@ -55,9 +55,83 @@ The .yaml runfile format allows for fast and easy input parameter modification. 
 * trange 
     * range of temperature to consider
  
-## Example Outputs
+# Science
 
-In progress
+## Background
+
+### Force fields
+Molecular Dynamics (the atomistic-level simulation of molecules) has been used to study the behavior of fluids, proteins, drug binding, and other phenomena since the late 1970's.  Crucial to molecular dynamics are *force fields*, which are energy functions that encode the physical interactions of atoms into simple physical forms.  Within a specific functional form, force fields are parameterized (i.e. constants are chosen for particular chemical species so that the potential matches reality).  Force fields are generally broken into two components: 
+
+(Insert Bonded image here)
+
+While bonded interactions are typically fit to quantum mechanical simulations like DFT, non-bonded interactions have a less obvious connection to data and are generally fit to physical property data, making their parameterization a more difficult problem.
+
+### Bayesian Parameter Inference
+
+An attractive paradigm for parameterizing non-bonded interactions is Bayesian parameter sampling, which encodes prior knowledge about the distribution through a prior distribution and fitting "constraints" through a likelihood (or energy) function, combining these together into the posterior distribution.  This posterior distribution gives us the dependence of the data fit to the parameters of the model, and allows us to make estimates of good parameter sets.
+
+### MCMC Simulation
+
+Part of the issue with Bayesian Inference is that, due to the likelihood functions that are chose, posterior distributions are often non-analytical and non-trivial to compute.  In this case, we turn to Markov Chain Monte Carlo sampling to estimate the posterior distribution.  By proposing random moves and accepting/rejecting them with a certain criteria, we draw samples from the posterior distribution. In the Bayesian paradigm (and with a careful choice of move proposals) this criteria turns out to be:
+
+(Insert MCMC here)
+
+Collecting enough of these samples gives a reasonable approximation of the posterior distribution.
+
+## 2CLJQ model
+
+### Force field
+
+The 2 center Lennard-Jones + Quadrupole (2CLJQ) model is chosen for this investigation for several reasons:
+1. It is a simple (4-parameter) model that focuses on non-bonded interactions (only bonded parameter is the bond length between LJ sites & the model is rigid).
+2. Analytical correlations for physical properties (liquid density, saturation pressure, surface tension) are available from Stoll and Werth, so no actual simulation is required to evaluate these properties as a function of many parameter sets.
+3.  A previous optimzation study for this set of fluids was done by Stobener, which provides a convenient benchmark for our Bayesian approach.
+
+(Image of 2CLJQ diagram)
+
+### Experimental Data
+
+Experimental data for the chosen compounds is available for our collaborators in the temperature range 55-95% of critical temperature.
+
+### Uncertainty models
+
+Because the computed properties come from analytical correlations rather than direct simulations, one must account for uncertainy inherent in the correlations (due to their inability to fit every temperature and property combination perfectly.  These uncertainty models are described in `uncertainty_models.py`
+
+## Experiments
+In this study, we attempt to reparameterize the 2CLJQ model by Bayesian parameter sampling from the analytical correlations provided by Stoll and Werth.
+
+### Compounds and criteria chosen
+Parameterization was performed in the following cases, to match the criteria of Stobener: a 2 criteria case (liquid density and saturation pressure) and a 3 criteria case (liquid density, saturation pressure, surface tension).
+
+Compounds were chosen based on inclusion in the Stobener study and availability of experimental data.  
+Included in this study: O2, N2, Br2, F2, C2H2, C2H4, C2H6, C2F4.
+Note that C2F4 is not included in the 3-criteria case due to a lack of experimental surface tension data
+
+### Simulation parameters
+
+In all cases, simulations were run for 2,000,000 MCMC steps.  Running all 15 cases 4 at a time in parallel, this took roughly 3 hours.  In each case, 10 data points between 55-95% of critical temperature were chosen (unless data was not available for this entire range, in which case 10 data points were chosen from the available range).  The likelihood function was computed by forming an normal distribution around each experimental value with a shape parameter determined by the model uncertainty and then attempting to reproduce the experimental value with the analytical correlations and parameters.  The probability of this value being produced under the normal distribution is then multiplied by the corresponding probability for all other experimental values.  In this way, the closer the predictions are to the experimental values, the higher the likelihood.
+
+Priors were chosen to be simple exponential priors, which encode that the values must be positive, and likely to be in a region based on the rate parameter.
+
+### Results
+
+As a metric of evaluating our parameter sets, we use average percent deviations from experimental values (i.e. for each property, compute the deviation from experiment for each temperature and average them), and compare these deviations to those from the Stobener parameter sets. 
+
+In the following table, we include two parameter sets from our simulations:
+1. A maximum a posterior (MAP) parameter set - essentially the parameter set that was sampled the most during the simulation.
+2. A pareto set based on minimizing the *total* average percent deviation over all properties - i.e., it chooses the parameter set that minimizes the *combined* deviations. 
+These are compared to:
+3. A selected Pareto set from the Stobener paper.
+
+For the 2-criteria case:
+
+(2-criteria table)
+
+For the 3 criteria case:
+
+(3 - criteria table)
+
+
 
 ### Copyright
 
