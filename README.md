@@ -118,18 +118,20 @@ Priors were chosen to be simple exponential priors, which encode that the values
 As a metric of evaluating our parameter sets, we use average percent deviations from experimental values (i.e. for each property, compute the deviation from experiment for each temperature and average them), and compare these deviations to those from the Stobener parameter sets. 
 
 In the following table, we include two parameter sets from our simulations:
-1. A maximum a posterior (MAP) parameter set - essentially the parameter set that was sampled the most during the simulation.
-2. A pareto set based on minimizing the *total* average percent deviation over all properties - i.e., it chooses the parameter set that minimizes the *combined* deviations. 
+1. (PM) A maximum a posterior (MAP) parameter set - essentially the parameter set that was sampled the most during the simulation.
+2. (PP) A pareto set based on minimizing the *total* average percent deviation over all properties - i.e., it chooses the parameter set that minimizes the *combined* deviations. 
 These are compared to:
-3. A selected Pareto set from the Stobener paper.
+3. (SP) A selected Pareto set from the Stobener paper.
 
 For the 2-criteria case:
 
-(2-criteria table)
+![2_criteria_devs](2_criteria_devs.png)
 
 For the 3 criteria case:
 
-(3 - criteria table)
+![3_criteria_devs](3_criteria_devs.png)
+
+For the most part, the Parambayes MAP (PM) parameter sets end up doing worse than the Stobener Pareto (SP) set, but the Parambayes Pareto (PP) set does slightly better.  This indicates that there is influence from the prior that is shifting the posterior distributions away from the desired values.  This could be mitigated by using a more informed prior, perhaps by fitting a gamma or normal distribution to a shorter MCMC run.
 
 
 
