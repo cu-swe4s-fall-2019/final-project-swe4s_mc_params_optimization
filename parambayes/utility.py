@@ -183,3 +183,19 @@ def computePercentDeviations(
         psat_mean_relative_deviation, \
         surftens_mean_relative_deviation, \
         T_c_relative_deviation
+
+
+def find_minimum_percent_dev(filepath, criteria):
+    trace = np.load(filepath + '/trace/trace.npy')
+    percent_dev_trace = np.load(filepath +
+                                '/trace/percent_dev_trace_tuned.npy')
+    if criteria == 'rhol+Psat':
+        devsum = np.sum(percent_dev_trace[:, :2], axis=1)
+    elif criteria == 'All':
+        devsum = np.sum(percent_dev_trace[:, :3], axis=1)
+
+    key = np.argmin(devsum)
+    params = trace[key]
+    devs = percent_dev_trace[key]
+    np.savetxt(filepath + '/minimum_devs.csv', (params, devs), delimiter=',')
+    return params, devs

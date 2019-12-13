@@ -10,6 +10,9 @@ import yaml
 from parambayes.LennardJones_2Center_correlations import LennardJones_2C
 from datetime import date
 from parambayes import MCMC_Simulation, MCMC_Prior
+from parambayes.utility import (rhol_hat_models, Psat_hat_models,
+                                SurfTens_hat_models, T_c_hat_models,
+                                computePercentDeviations)
 import argparse
 import os
 
@@ -27,7 +30,6 @@ def parse_input_yaml(filepath):
 
 def basic(simulation_params):
 
-    print(simulation_params['priors'])
     mcmc_prior = MCMC_Prior(simulation_params['priors'])
     mcmc_prior.make_priors()
 
@@ -45,8 +47,8 @@ def basic(simulation_params):
     mcmc_simulator.set_initial_state(mcmc_prior, compound_2CLJ)
 
     mcmc_simulator.MCMC_Outerloop(mcmc_prior, compound_2CLJ)
-    mcmc_simulator.find_maxima(mcmc_simulator.trace_tuned)
-    print(mcmc_simulator.max_values)
+    mcmc_simulator.find_maxima(mcmc_simulator.trace_tuned, compound_2CLJ)
+
     mcmc_simulator.write_output(
         simulation_params['priors'],
         tag=simulation_params['label'],

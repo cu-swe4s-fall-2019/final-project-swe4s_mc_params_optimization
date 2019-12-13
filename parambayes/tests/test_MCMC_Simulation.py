@@ -113,9 +113,11 @@ class TestInit(unittest.TestCase):
             simulation_params['steps'])
 
     def test_trange(self):
-        self.assertRaises(TypeError, MCMC_Simulation,
+        self.assertRaises(TypeError,
+                          MCMC_Simulation,
                           simulation_params['compound'],
-                          ['int', [1, 1, 1]], simulation_params['properties'],
+                          ['int',[1, 1, 1]],
+                          simulation_params['properties'],
                           simulation_params['number_data_points'],
                           simulation_params['steps'])
         self.assertRaises(ValueError,
@@ -266,18 +268,23 @@ class TestCalcPosterior(unittest.TestCase):
         mcmc_simulator, compound_2CLJ, prior = TestCalcPosterior.setup()
         chain_values = [70, 0.3, 0.1, 0.3]
         self.assertRaises(TypeError, mcmc_simulator.calc_posterior,
-                          prior, compound_2CLJ, 'string')
-        self.assertRaises(TypeError, mcmc_simulator.calc_posterior, prior,
-                          compound_2CLJ, 1.1)
-        self.assertRaises(IndexError, mcmc_simulator.calc_posterior, prior,
-                          compound_2CLJ, chain_values[1:])
-        self.assertRaises(TypeError, mcmc_simulator.calc_posterior, 'prior',
-                          compound_2CLJ, chain_values)
-        self.assertRaises(TypeError, mcmc_simulator.calc_posterior, prior,
-                          'C2H6', chain_values)
+                          prior,
+                          compound_2CLJ,
+                          'string')
+        self.assertRaises(TypeError,
+                          mcmc_simulator.calc_posterior,
+                          prior,
+                          compound_2CLJ,
+                          1.1)
+        self.assertRaises(IndexError, mcmc_simulator.calc_posterior,
+                          prior, compound_2CLJ, chain_values[1:])
+        self.assertRaises(TypeError, mcmc_simulator.calc_posterior,
+                          'prior', compound_2CLJ, chain_values)
+        self.assertRaises(TypeError, mcmc_simulator.calc_posterior,
+                          prior, 'C2H6', chain_values)
         chain_values = [70, 0.3, 0.1, 'blep']
-        self.assertRaises(TypeError, mcmc_simulator.calc_posterior, prior,
-                          compound_2CLJ, chain_values)
+        self.assertRaises(TypeError, mcmc_simulator.calc_posterior,
+                          prior, compound_2CLJ, chain_values)
 
     def test_nan_handle(self):
         mcmc_simulator, compound_2CLJ, prior = TestCalcPosterior.setup()
@@ -302,10 +309,10 @@ class TestSetInitialState(unittest.TestCase):
 
     def test_inputs(self):
         mcmc_simulator, compound_2CLJ, prior = TestSetInitialState.setup()
-        self.assertRaises(TypeError, mcmc_simulator.set_initial_state,
-                          'text', compound_2CLJ)
-        self.assertRaises(TypeError, mcmc_simulator.set_initial_state,
-                          prior, 'text')
+        self.assertRaises(TypeError, mcmc_simulator.set_initial_state, 'text',
+                          compound_2CLJ)
+        self.assertRaises(TypeError, mcmc_simulator.set_initial_state, prior,
+                          'text')
         self.assertRaises(TypeError, mcmc_simulator.set_initial_state, prior,
                           compound_2CLJ, initial_position='text')
         self.assertRaises(IndexError, mcmc_simulator.set_initial_state,
@@ -347,25 +354,25 @@ class TestMCMCOuterLoop(unittest.TestCase):
 
     def test_inputs(self):
         mcmc_simulator, compound_2CLJ, prior = TestMCMCOuterLoop.setup()
-        self.assertRaises(TypeError,
-                          mcmc_simulator.MCMC_Outerloop, prior, 'text')
-        self.assertRaises(TypeError,
-                          mcmc_simulator.MCMC_Outerloop, 'text', compound_2CLJ)
+        self.assertRaises(TypeError, mcmc_simulator.MCMC_Outerloop, prior,
+                          'text')
+        self.assertRaises(TypeError, mcmc_simulator.MCMC_Outerloop, 'text',
+                          compound_2CLJ)
 
     def test_outputs(self):
         mcmc_simulator, compound_2CLJ, prior = TestMCMCOuterLoop.setup()
         mcmc_simulator.MCMC_Outerloop(prior, compound_2CLJ)
         self.assertEqual(len(mcmc_simulator.logp_trace),
-                         mcmc_simulator.steps+1)
-        self.assertEqual(len(mcmc_simulator.trace), mcmc_simulator.steps+1)
+                         mcmc_simulator.steps + 1)
+        self.assertEqual(len(mcmc_simulator.trace), mcmc_simulator.steps + 1)
         self.assertEqual(len(mcmc_simulator.percent_dev_trace),
-                         mcmc_simulator.steps+1)
+                         mcmc_simulator.steps + 1)
         self.assertEqual(len(mcmc_simulator.logp_trace_tuned),
-                         mcmc_simulator.steps-mcmc_simulator.tune_for)
+                         mcmc_simulator.steps - mcmc_simulator.tune_for)
         self.assertEqual(len(mcmc_simulator.trace_tuned),
-                         mcmc_simulator.steps-mcmc_simulator.tune_for)
+                         mcmc_simulator.steps - mcmc_simulator.tune_for)
         self.assertEqual(len(mcmc_simulator.percent_dev_trace_tuned),
-                         mcmc_simulator.steps-mcmc_simulator.tune_for)
+                         mcmc_simulator.steps - mcmc_simulator.tune_for)
         self.assertGreaterEqual(mcmc_simulator.move_proposals,
                                 mcmc_simulator.move_acceptances)
 
@@ -436,6 +443,7 @@ class TestMCMCSteps(unittest.TestCase):
         mcmc_simulator, compound_2CLJ, prior = TestMCMCSteps.setup()
 
         self.assertRaises(TypeError, mcmc_simulator.MCMC_Steps, prior, 'text')
+
         self.assertRaises(TypeError,
                           mcmc_simulator.MCMC_Steps, 'text', compound_2CLJ)
 
@@ -520,7 +528,9 @@ class TestWriteOutput(unittest.TestCase):
                             simulation_params['trange'],
                             simulation_params['properties'],
                             simulation_params['number_data_points'],
-                            simulation_params['steps'])
+                            simulation_params['steps'],
+                            tune_for=100,
+                            tune_freq=50)
         mcmc_simulator.prepare_data()
         compound_2CLJ = LennardJones_2C(mcmc_simulator.M_w)
         prior = MCMC_Prior(simulation_params['priors'])
@@ -528,6 +538,7 @@ class TestWriteOutput(unittest.TestCase):
         mcmc_simulator.set_initial_state(prior, compound_2CLJ)
         mcmc_simulator.MCMC_Outerloop(prior, compound_2CLJ)
         return mcmc_simulator, prior, compound_2CLJ
+
 
     def test_bad_input(self):
         mcmc_simulator, prior, compound_2CLJ = TestWriteOutput.setup()
@@ -540,9 +551,12 @@ class TestWriteOutput(unittest.TestCase):
 
     def test_output_created(self):
         mcmc_simulator, prior, compound_2CLJ = TestWriteOutput.setup()
+        print(mcmc_simulator.trace_tuned[0])
+        mcmc_simulator.find_maxima(mcmc_simulator.trace_tuned,compound_2CLJ)
         path = mcmc_simulator.write_output(simulation_params['priors'],
-                                           output_path=True,
-                                           save_traj=True)
+                                           output_path = True,
+                                           save_traj = True)
+
         self.assertTrue(os.path.isdir(path))
         self.assertTrue(os.path.isdir(path+'/figures'))
         self.assertTrue(os.path.isfile(path+'/figures/logp_trace.png'))
@@ -578,9 +592,12 @@ class TestFindMaxima(unittest.TestCase):
 
     def test_input(self):
         mcmc_simulator, prior, compound_2CLJ = TestFindMaxima.setup()
-        self.assertRaises(TypeError, mcmc_simulator.find_maxima, 'not_array')
+        self.assertRaises(TypeError, 
+                          mcmc_simulator.find_maxima, 
+                          'not_array',
+                          compound_2CLJ)
 
     def test_return_values(self):
-        mcmc_simulator, prior, compound_2CLJ = TestFindMaxima.setup()
-        mcmc_simulator.find_maxima(mcmc_simulator.trace)
+        mcmc_simulator,prior,compound_2CLJ = TestFindMaxima.setup()
+        mcmc_simulator.find_maxima(mcmc_simulator.trace,compound_2CLJ)
         self.assertIsNotNone(mcmc_simulator.max_values)

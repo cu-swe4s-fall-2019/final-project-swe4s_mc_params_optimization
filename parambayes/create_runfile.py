@@ -141,7 +141,7 @@ def main():
     simulation_params["label"] = args.label
     # Label for output files
     today = ""
-    if bool(args.date):
+    if eval(args.date):
         today = "_" + str(date.today())
 
     if os.path.exists("runfiles") is False:
