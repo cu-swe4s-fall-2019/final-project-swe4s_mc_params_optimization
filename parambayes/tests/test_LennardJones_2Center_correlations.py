@@ -108,8 +108,3 @@ class TestLennardJones2Center(unittest.TestCase):
         expected_val = 738.7807737911776
         self.assertEqual(self.LJ2C.T_c_hat_2CLJQ(400, 20, 20, 300),
                          expected_val)
-
-
-if __name__ == '__main__':
-    unittest.main()
-
