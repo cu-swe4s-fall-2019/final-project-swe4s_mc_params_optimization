@@ -25,6 +25,8 @@ Conda install the following packages:
 * pathlib
 * pycodestyle
 
+To install the parambayes package, navigate to `parambayes` and use `pip install -e . -r requirements.txt`
+
 ## Usage
 
 ### Description
