@@ -101,10 +101,10 @@ Collecting enough of these samples gives a reasonable approximation of the poste
 
 ### Force field
 
-The 2 center Lennard-Jones + Quadrupole (2CLJQ) model is chosen for this investigation for several reasons:
+The 2 center Lennard-Jones + Quadrupole (2CLJQ) [model](https://aip.scitation.org/doi/10.1063/1.1623475) is chosen for this investigation for several reasons:
 1. It is a simple (4-parameter) model that focuses on non-bonded interactions (only bonded parameter is the bond length between LJ sites & the model is rigid).
-2. Analytical correlations for physical properties (liquid density, saturation pressure, surface tension) are available from Stoll and Werth, so no actual simulation is required to evaluate these properties as a function of many parameter sets.
-3.  A previous optimzation study for this set of fluids was done by Stobener, which provides a convenient benchmark for our Bayesian approach.
+2. Analytical correlations for physical properties (liquid density, saturation pressure, surface tension) are available from [Stoll](https://arxiv.org/abs/0904.3679) and [Werth](https://www.sciencedirect.com/science/article/pii/S0378381215000618), so no actual simulation is required to evaluate these properties as a function of many parameter sets.
+3.  A previous optimzation study for this set of fluids was done by [Stobener](https://www.sciencedirect.com/science/article/pii/S0378381215302338), which provides a convenient benchmark for our Bayesian approach.
 
 ![2CLJQ](output/figures/2CLJQ.png)
 
