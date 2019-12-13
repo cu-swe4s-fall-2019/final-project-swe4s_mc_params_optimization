@@ -47,8 +47,8 @@ def basic(simulation_params):
     mcmc_simulator.set_initial_state(mcmc_prior, compound_2CLJ)
 
     mcmc_simulator.MCMC_Outerloop(mcmc_prior, compound_2CLJ)
-    mcmc_simulator.find_maxima(mcmc_simulator.trace_tuned,compound_2CLJ)
-        
+    mcmc_simulator.find_maxima(mcmc_simulator.trace_tuned, compound_2CLJ)
+
     mcmc_simulator.write_output(
         simulation_params['priors'],
         tag=simulation_params['label'],

@@ -583,15 +583,13 @@ class MCMC_Simulation():
         self.write_datapoints(path)
 
         self.write_metadata(path, prior_dict)
-        
 
-        if self.max_values is not None:    
-            np.savetxt(path+'/max_values.csv', (self.max_values,
-                                                self.max_percent_dev,
-                                                self.ff_params_ref[0],
-                                                self.ff_percent_dev),
-                                                delimiter=',')
-        
+        if self.max_values is not None:
+            np.savetxt(path + '/max_values.csv', (self.max_values,
+                                                  self.max_percent_dev,
+                                                  self.ff_params_ref[0],
+                                                  self.ff_percent_dev),
+                       delimiter=',')
 
         if save_traj is True:
             print('Saving Trajectories')
@@ -679,12 +677,14 @@ class MCMC_Simulation():
             Psat_hat_models,
             SurfTens_hat_models,
             T_c_hat_models)
+        print(self.ff_params_ref[0])
+        print(self.ff_params_ref[1])
         self.ff_percent_dev = computePercentDeviations(
             compound_2CLJ,
             self.thermo_data_rhoL[:, 0],
             self.thermo_data_Pv[:, 0],
             self.thermo_data_SurfTens[:, 0],
-            self.ff_params_ref[0],
+            self.ff_params_ref[1],
             self.thermo_data_rhoL[:, 1],
             self.thermo_data_Pv[:, 1],
             self.thermo_data_SurfTens[:, 1],
@@ -693,8 +693,6 @@ class MCMC_Simulation():
             Psat_hat_models,
             SurfTens_hat_models,
             T_c_hat_models)
-        
-            
 
 
 class MCMC_Prior():
