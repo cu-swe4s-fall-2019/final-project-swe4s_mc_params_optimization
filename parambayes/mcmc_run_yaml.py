@@ -79,7 +79,6 @@ def main():
     mcmc_simulator = basic(simulation_params)
 
     print('Finished!')
-    return mcmc_simulator
 
 
 if __name__ == '__main__':
