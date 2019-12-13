@@ -59,12 +59,19 @@ The .yaml runfile format allows for fast and easy input parameter modification. 
 
 `parambayes` contains the following files, which serve the following functions:
 
-`parambayes.py` contains the `MCMC_Simulation` and `MCMC_Prior` classes.  `MCMC_Simulation` creates and runs the MCMC simulations, while `MCMC_Prior` sets up the prior functions that are used in calculating the posterior.
+`parambayes.py` contains the `MCMC_Simulation` and `MCMC_Prior` classes.  
+`MCMC_Simulation` creates and runs the MCMC simulations, while `MCMC_Prior` sets up the prior functions that are used in calculating the posterior.
+
 `mcmc_run_yaml.py` contains the driver which takes a runfile and creates and runs an MCMC simulation.
+
 `create_runfile.py` contains an application to create runfiles for use in `mcmc_run_yaml.py`
+
 `output_models.py` contains an implementation of the surrogate models that interfaces with the `MCMC_Simulation` object.
+
 `data_import.py` is used by `MCMC_Simulation` to import the data and parameters from files.
+
 `plotting.py` creates the triangle plots shown here.
+
 `utility.py` contains various auxiliary functions.
 
 # Science
